@@ -27,7 +27,7 @@ const CATEGORIES = [
   },
   {
     name: 'APY & Rewards',
-    weight: '25%',
+    weight: '20%',
     description: 'Evaluates the returns a delegator can expect. Uses percentile-based scoring -- validators are ranked against all other validators, so even small APY differences produce meaningful grade separation.',
     metrics: [
       { name: 'Delegator APY', scoring: 'Primary metric. Scored by percentile rank among all validators (3-10 scale). A validator at the 90th percentile scores ~9.3 (S), 70th percentile ~7.9 (B+), 50th percentile ~6.5 (B). This ensures realistic grade spread even when APYs cluster tightly.' },
@@ -71,7 +71,7 @@ const CATEGORIES = [
   },
   {
     name: 'Reliability',
-    weight: '15%',
+    weight: '20%',
     description: 'Measures validator consistency and operational quality using on-chain metrics.',
     metrics: [
       { name: 'IBRL Score', scoring: 'Inclusivity/Build Reliability score from Trillium (0-100). Divided by 10 for the 0-10 grading scale. Measures how reliably a validator includes transactions in blocks.' },
@@ -102,8 +102,8 @@ export function Methodology() {
           <div>
             <p className="font-semibold mb-2">Overall Score Formula:</p>
             <div className="bg-[#0F0E0C] rounded-lg p-3 font-mono text-xs leading-relaxed border border-border">
-              Overall = Performance (25%) + APY & Rewards (25%) + Commission (15%)<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Reliability (15%) + Stake & Trust (10%) + Decentralization (10%)
+              Overall = Performance (25%) + APY & Rewards (20%) + Reliability (20%)<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Commission (15%) + Stake & Trust (10%) + Decentralization (10%)
             </div>
           </div>
         </CardContent>

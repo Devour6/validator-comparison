@@ -68,8 +68,9 @@ function scoreApy(apy: number, allValidators: ValidatorRaw[]): number {
   if (apys.length === 0) return 5
   const idx = apys.findIndex(a => a >= apy)
   const percentile = (idx >= 0 ? idx : apys.length) / apys.length
-  // Scale from 3 to 10 based on percentile position
-  return Math.round((3 + percentile * 7) * 10) / 10
+  // Scale from 3 to 10 based on percentile, rounded to nearest 0.5
+  // Rounding to 0.5 prevents noise (tiny APY differences) from dominating grades
+  return Math.round((3 + percentile * 7) * 2) / 2
 }
 
 function scoreCommission(commission: number): number {
@@ -199,7 +200,7 @@ export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   const votePacking = num(v.average_vote_packing_score)
   const reliScore = (Math.min(10, ibrl / 10) + scoreSkipRate(skip) + scoreEpochCredits(credits) + scoreVotePacking(votePacking)) / 4
 
-  const weights = { performance: 0.25, rewards: 0.25, stake: 0.1, commission: 0.15, decentralization: 0.1, reliability: 0.15 }
+  const weights = { performance: 0.25, rewards: 0.20, stake: 0.1, commission: 0.15, decentralization: 0.1, reliability: 0.20 }
   const overallScore = perfScore * weights.performance + rewardsScore * weights.rewards +
     stakeScore * weights.stake + commScore * weights.commission +
     decentScore * weights.decentralization + reliScore * weights.reliability
