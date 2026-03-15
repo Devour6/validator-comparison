@@ -11,6 +11,12 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Validator Comparison | Phase",
   description: "Compare Solana validators side-by-side — performance, APY, decentralization, and more.",
+  icons: {
+    icon: [
+      { url: '/icon.png', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({

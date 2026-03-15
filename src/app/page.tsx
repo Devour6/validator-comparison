@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ValidatorSearch } from '@/components/validator-search'
 import { ComparisonView } from '@/components/comparison-view'
@@ -65,12 +66,17 @@ export default function Home() {
     <div className="min-h-screen bg-[#0F0E0C]">
       <header className="border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-6">
-          <h1 className="font-display text-2xl md:text-3xl text-[#F3EED9]">
-            Validator Comparison
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Compare Solana validators side-by-side -- performance, APY, decentralization, and more.
-          </p>
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Phase" width={40} height={40} className="rounded-lg" />
+            <div>
+              <h1 className="font-display text-2xl md:text-3xl text-[#F3EED9]">
+                Validator Comparison
+              </h1>
+              <p className="text-muted-foreground mt-0.5">
+                Compare Solana validators side-by-side -- performance, APY, decentralization, and more.
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
