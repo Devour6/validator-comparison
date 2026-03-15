@@ -9,7 +9,7 @@ export interface ValidatorRaw {
   epoch_range?: string
   is_dz: boolean
   is_sfdp: boolean
-  client_type?: number
+  client_type?: string | number
   stake_pools?: Record<string, number>
   total_from_stake_pools?: number
   total_not_from_stake_pools?: number

@@ -72,34 +72,31 @@ export function ComparisonView({ validators, allValidators }: ComparisonViewProp
         <CardContent className="space-y-4">
           {categories.map(cat => (
             <div key={cat.key} className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  {cat.label}
-                </span>
-                <div className="flex items-center gap-3">
-                  {cat.grades.map((g, i) => (
-                    <span
-                      key={i}
-                      className="text-sm font-semibold tabular-nums"
-                      style={{ color: g.score === Math.max(...cat.grades.map(x => x.score)) && validators.length > 1 ? '#22c55e' : VALIDATOR_COLORS[i] }}
-                    >
-                      {g.score.toFixed(1)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-1 h-2">
+              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                {cat.label}
+              </span>
+              <div className="flex gap-1">
                 {cat.grades.map((g, i) => (
-                  <div key={i} className="flex-1 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${(g.score / 10) * 100}%`,
-                        backgroundColor: g.score === Math.max(...cat.grades.map(x => x.score)) && validators.length > 1
-                          ? '#22c55e'
-                          : VALIDATOR_COLORS[i] + '80',
-                      }}
-                    />
+                  <div key={i} className="flex-1 space-y-1">
+                    <div className="flex justify-end pr-1">
+                      <span
+                        className="text-xs font-semibold tabular-nums"
+                        style={{ color: g.score === Math.max(...cat.grades.map(x => x.score)) && validators.length > 1 ? '#22c55e' : VALIDATOR_COLORS[i] }}
+                      >
+                        {g.score.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="rounded-full bg-secondary overflow-hidden h-2">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${(g.score / 10) * 100}%`,
+                          backgroundColor: g.score === Math.max(...cat.grades.map(x => x.score)) && validators.length > 1
+                            ? '#22c55e'
+                            : VALIDATOR_COLORS[i] + '80',
+                        }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

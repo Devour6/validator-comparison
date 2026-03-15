@@ -149,32 +149,32 @@ function scoreVotePacking(score: number): number {
   return 3
 }
 
-function getClientName(clientType: number | undefined): string {
+function getClientName(clientType: string | number | undefined): string {
   if (clientType == null) return 'Unknown'
-  const types: Record<number, string> = {
-    0: 'Agave', 1: 'Jito', 2: 'Frankendancer', 3: 'Firedancer',
-    4: 'Paladin', 5: 'Anza SVM', 6: 'Sig', 7: 'Mithril',
-    8: 'Solang', 9: 'RPC Node', 10: 'Pyth', 11: 'Unknown',
-  }
-  return types[clientType] || `Type ${clientType}`
+  // Trillium returns strings like "Jito_BAM (6)", "Agave (0)", "Firedancer (3)"
+  const s = String(clientType)
+  const label = s.split(' (')[0].replace(/_/g, ' ')
+  return label || 'Unknown'
 }
 
-function scoreDecentralization(v: ValidatorRaw, allValidators: ValidatorRaw[]): number {
+function isMinorityClient(clientType: string | number | undefined): boolean {
+  if (clientType == null) return false
+  const s = String(clientType).toLowerCase()
+  // Agave and Jito (standard) are majority clients
+  // Everything else (Firedancer, Frankendancer, Sig, Jito_BAM, etc.) is minority
+  return !s.startsWith('agave') && !s.startsWith('jito (') && !s.startsWith('jito_solana')
+}
+
+function scoreDecentralization(v: ValidatorRaw): number {
   let score = 5
-  const ct = num(v.client_type)
-  if (ct >= 2 && ct <= 8) score += 2
+  // Minority client bonus -- running non-majority software helps the network
+  if (isMinorityClient(v.client_type)) score += 2
+  // SFDP membership
   if (v.is_sfdp) score += 1
+  // DoubleZero membership -- contributes to network infrastructure
+  if (v.is_dz) score += 1
+  // Superminority penalty
   if (v.superminority) score -= 2
-  const cityCount: Record<string, number> = {}
-  for (const val of allValidators) {
-    const key = (val.city || '') + ',' + (val.country || '')
-    cityCount[key] = (cityCount[key] || 0) + 1
-  }
-  const myCity = (v.city || '') + ',' + (v.country || '')
-  const myCityCount = cityCount[myCity] || 0
-  if (myCityCount <= 5) score += 2
-  else if (myCityCount <= 20) score += 1
-  else if (myCityCount > 100) score -= 1
   return Math.max(0, Math.min(10, score))
 }
 
@@ -194,7 +194,7 @@ export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   const comm = num(v.average_commission)
   const commScore = scoreCommission(comm)
 
-  const decentScore = scoreDecentralization(v, allValidators)
+  const decentScore = scoreDecentralization(v)
 
   const ibrl = num(v.average_ibrl_score)
   const votePacking = num(v.average_vote_packing_score)
@@ -286,9 +286,11 @@ export function buildCategoryData(
       grades: grades.map(g => g.categories.decentralization),
       metrics: [
         textRow('Client', v => getClientName(v.client_type), 'Minority clients benefit network health'),
-        textRow('Location', v => [v.city, v.country].filter(Boolean).join(', ') || 'Unknown', 'Geographic location of the validator'),
+        textRow('Minority Client', v => isMinorityClient(v.client_type) ? 'Yes' : 'No', 'Non-majority client software -- Firedancer, Jito_BAM, Sig, etc.'),
+        textRow('DoubleZero', v => v.is_dz ? 'Yes' : 'No', 'DoubleZero network member -- contributes to network infrastructure'),
         textRow('SFDP', v => v.is_sfdp ? 'Yes' : 'No', 'Solana Foundation Delegation Program member'),
         textRow('Superminority', v => v.superminority ? 'Yes' : 'No', 'Not in superminority is better for decentralization'),
+        textRow('Location', v => [v.city, v.country].filter(Boolean).join(', ') || 'Unknown', 'Geographic location -- shown for context'),
       ],
     },
     {
