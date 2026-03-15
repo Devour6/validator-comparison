@@ -54,9 +54,7 @@ const CATEGORIES = [
     weight: '15%',
     description: 'Evaluates how much the validator charges delegators. Lower commission means more rewards pass through to stakers.',
     metrics: [
-      { name: 'Commission', scoring: 'Primary metric. Scored on a 3-10 scale. 0% = 10, up to 3% = 9, up to 5% = 8, up to 7% = 7, up to 10% = 6, up to 15% = 5, up to 20% = 4, above = 3.' },
-      { name: 'Priority Fee Commission', scoring: 'Shown for comparison. Commission charged on priority fee earnings.' },
-      { name: 'MEV Commission', scoring: 'Shown for comparison. Commission charged on MEV (Jito tips) earnings.' },
+      { name: 'Commission', scoring: 'Scored on a 3-10 scale. 0% = 10, up to 3% = 9, up to 5% = 8, up to 7% = 7, up to 10% = 6, up to 15% = 5, up to 20% = 4, above = 3. This is the validator\'s commission rate on all rewards.' },
     ],
     formula: 'Category Score = Commission Score',
   },

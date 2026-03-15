@@ -246,9 +246,7 @@ export function buildCategoryData(
       label: 'Commission',
       grades: grades.map(g => g.categories.commission),
       metrics: [
-        row('Commission', v => num(v.average_commission), pct, true, 'Lower is better -- commission on inflation rewards'),
-        row('Priority Fee Commission', v => num(v.average_priority_fee_commission), pct, true, 'Lower is better -- commission on priority fees'),
-        row('MEV Commission', v => num(v.average_mev_commission), pct, true, 'Lower is better -- commission on MEV earnings'),
+        row('Commission', v => num(v.average_commission), pct, true, 'Lower is better -- validator commission on rewards'),
       ],
     },
     {
