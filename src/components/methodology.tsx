@@ -20,10 +20,10 @@ const CATEGORIES = [
       { name: 'Skip Rate', scoring: 'Scored on a 2-10 scale. Under 1% = 10, under 2% = 9, under 3% = 8, under 5% = 7, under 8% = 6, under 12% = 5, under 18% = 4, under 25% = 3, above = 2. Lower skip rates mean fewer missed leader slots.' },
       { name: 'Tx Success Rate', scoring: 'Scored on a 4-10 scale based on overall transaction success percentage. 95%+ = 10, 90%+ = 9, down to below 60% = 4.' },
       { name: 'Epoch Credits', scoring: 'Scored based on vote credits earned per epoch. 450K+ = 10, 440K+ = 9, 430K+ = 8, down to below 350K = 3. Higher credits indicate consistent, timely voting.' },
+      { name: 'Build Time Score', scoring: 'Scored on a 3-10 scale based on block build efficiency (0-100). 99.5+ = 10, 99+ = 9, 98+ = 8, 96+ = 7, 93+ = 6, 90+ = 5. Measures how efficiently the validator constructs blocks during leader slots.' },
       { name: 'User Tx Success', scoring: 'Shown for comparison. Non-vote transaction success rate -- indicates how reliably user transactions land.' },
-      { name: 'Build Time Score', scoring: 'Shown for comparison. Measures block build efficiency from the Trillium dataset (0-100 scale).' },
     ],
-    formula: 'Category Score = (Skip Rate Score + Tx Success Score + Epoch Credits Score) / 3',
+    formula: 'Category Score = (Skip Rate + Tx Success + Epoch Credits + Build Time) / 4',
   },
   {
     name: 'APY & Rewards',
@@ -75,11 +75,12 @@ const CATEGORIES = [
     description: 'Measures validator consistency and operational quality using on-chain metrics.',
     metrics: [
       { name: 'IBRL Score', scoring: 'Inclusivity/Build Reliability score from Trillium (0-100). Divided by 10 for the 0-10 grading scale. Measures how reliably a validator includes transactions in blocks.' },
+      { name: 'Vote Packing', scoring: 'Scored on a 3-10 scale based on vote packing efficiency (0-100). 98+ = 10, 97+ = 9, 96+ = 8, 94+ = 7, 92+ = 6, 90+ = 5. Higher scores mean the validator packs votes more efficiently, reducing overhead.' },
       { name: 'Skip Rate', scoring: 'Same scoring as Performance category. Consistent block production is a reliability signal.' },
       { name: 'Epoch Credits', scoring: 'Same scoring as Performance category. Consistent voting indicates reliable operations.' },
-      { name: 'Vote Packing / Vote Latency / JIP-25 Rank', scoring: 'Shown for comparison. Additional reliability indicators.' },
+      { name: 'Vote Latency / JIP-25 Rank', scoring: 'Shown for comparison. Additional reliability indicators.' },
     ],
-    formula: 'Category Score = (IBRL Score + Skip Rate Score + Epoch Credits Score) / 3',
+    formula: 'Category Score = (IBRL Score + Vote Packing + Skip Rate + Epoch Credits) / 4',
   },
 ]
 

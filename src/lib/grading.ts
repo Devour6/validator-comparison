@@ -122,6 +122,32 @@ function scoreEpochCredits(credits: number): number {
   return 3
 }
 
+function scoreBuildTime(score: number): number {
+  // Build time score from Trillium is 0-100
+  // Top validators are 99.5+, good ones 98+, average 95+
+  if (score >= 99.5) return 10
+  if (score >= 99) return 9
+  if (score >= 98) return 8
+  if (score >= 96) return 7
+  if (score >= 93) return 6
+  if (score >= 90) return 5
+  if (score >= 85) return 4
+  return 3
+}
+
+function scoreVotePacking(score: number): number {
+  // Vote packing score from Trillium is 0-100
+  // Top validators are 98+, good ones 96+, average 93+
+  if (score >= 98) return 10
+  if (score >= 97) return 9
+  if (score >= 96) return 8
+  if (score >= 94) return 7
+  if (score >= 92) return 6
+  if (score >= 90) return 5
+  if (score >= 85) return 4
+  return 3
+}
+
 function getClientName(clientType: number | undefined): string {
   if (clientType == null) return 'Unknown'
   const types: Record<number, string> = {
@@ -155,7 +181,8 @@ export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   const skip = num(v.avg_skip_rate)
   const credits = num(v.average_epoch_credits)
   const txSuccess = num(v.average_avg_tx_success_rate)
-  const perfScore = (scoreSkipRate(skip) + scoreTxSuccess(txSuccess) + scoreEpochCredits(credits)) / 3
+  const buildTime = num(v.average_build_time_score)
+  const perfScore = (scoreSkipRate(skip) + scoreTxSuccess(txSuccess) + scoreEpochCredits(credits) + scoreBuildTime(buildTime)) / 4
 
   const delegatorApy = num(v.average_delegator_compound_total_apy)
   const rewardsScore = scoreApy(delegatorApy, allValidators)
@@ -169,7 +196,8 @@ export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   const decentScore = scoreDecentralization(v, allValidators)
 
   const ibrl = num(v.average_ibrl_score)
-  const reliScore = (Math.min(10, ibrl / 10) + scoreSkipRate(skip) + scoreEpochCredits(credits)) / 3
+  const votePacking = num(v.average_vote_packing_score)
+  const reliScore = (Math.min(10, ibrl / 10) + scoreSkipRate(skip) + scoreEpochCredits(credits) + scoreVotePacking(votePacking)) / 4
 
   const weights = { performance: 0.25, rewards: 0.25, stake: 0.1, commission: 0.15, decentralization: 0.1, reliability: 0.15 }
   const overallScore = perfScore * weights.performance + rewardsScore * weights.rewards +
