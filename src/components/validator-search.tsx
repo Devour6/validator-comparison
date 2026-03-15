@@ -7,12 +7,13 @@ import type { ValidatorRaw } from '@/lib/types'
 interface ValidatorSearchProps {
   validators: ValidatorRaw[]
   selected: ValidatorRaw | null
-  onSelect: (v: ValidatorRaw) => void
+  onSelect: (v: ValidatorRaw | null) => void
+  onRemove?: () => void
   placeholder: string
   label: string
 }
 
-export function ValidatorSearch({ validators, selected, onSelect, placeholder, label }: ValidatorSearchProps) {
+export function ValidatorSearch({ validators, selected, onSelect, onRemove, placeholder, label }: ValidatorSearchProps) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [highlightIdx, setHighlightIdx] = useState(0)
@@ -70,12 +71,22 @@ export function ValidatorSearch({ validators, selected, onSelect, placeholder, l
             <p className="font-semibold text-foreground truncate">{selected.name || 'Unknown'}</p>
             <p className="text-xs text-muted-foreground font-mono truncate">{selected.vote_account_pubkey}</p>
           </div>
-          <button
-            onClick={() => onSelect(null as unknown as ValidatorRaw)}
-            className="shrink-0 text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-secondary"
-          >
-            Change
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => onSelect(null)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-secondary"
+            >
+              Change
+            </button>
+            {onRemove && (
+              <button
+                onClick={onRemove}
+                className="text-sm text-muted-foreground hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-red-500/10"
+              >
+                Remove
+              </button>
+            )}
+          </div>
         </div>
       </div>
     )
@@ -83,7 +94,17 @@ export function ValidatorSearch({ validators, selected, onSelect, placeholder, l
 
   return (
     <div className="space-y-2 relative" ref={ref}>
-      <label className="text-sm font-medium text-muted-foreground">{label}</label>
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-muted-foreground">{label}</label>
+        {onRemove && (
+          <button
+            onClick={onRemove}
+            className="text-xs text-muted-foreground hover:text-red-400 transition-colors"
+          >
+            Remove slot
+          </button>
+        )}
+      </div>
       <Input
         ref={inputRef}
         value={query}

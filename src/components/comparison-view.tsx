@@ -2,183 +2,183 @@
 
 import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { GradeBadge, GradeBar } from '@/components/grade-badge'
-import { compareValidators, getCategoryGrades, getClientName } from '@/lib/grading'
+import { GradeBadge } from '@/components/grade-badge'
+import { gradeValidator, buildCategoryData, getClientName } from '@/lib/grading'
 import type { ValidatorRaw } from '@/lib/types'
 
 interface ComparisonViewProps {
-  validatorA: ValidatorRaw
-  validatorB: ValidatorRaw
+  validators: ValidatorRaw[]
   allValidators: ValidatorRaw[]
 }
 
-const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
-  performance: { label: 'Performance', icon: '⚡' },
-  rewards: { label: 'APY & Rewards', icon: '💰' },
-  stake: { label: 'Stake & Trust', icon: '🏦' },
-  commission: { label: 'Commission', icon: '📊' },
-  decentralization: { label: 'Decentralization', icon: '🌍' },
-  reliability: { label: 'Reliability', icon: '🛡️' },
-}
+const VALIDATOR_COLORS = ['#F3EED9', '#3b82f6', '#f59e0b', '#8b5cf6']
 
-export function ComparisonView({ validatorA, validatorB, allValidators }: ComparisonViewProps) {
-  const comparison = useMemo(
-    () => compareValidators(validatorA, validatorB, allValidators),
-    [validatorA, validatorB, allValidators]
+export function ComparisonView({ validators, allValidators }: ComparisonViewProps) {
+  const grades = useMemo(
+    () => validators.map(v => gradeValidator(v, allValidators)),
+    [validators, allValidators]
   )
 
-  const categoryGrades = useMemo(
-    () => getCategoryGrades(validatorA, validatorB, allValidators),
-    [validatorA, validatorB, allValidators]
+  const categories = useMemo(
+    () => buildCategoryData(validators, allValidators),
+    [validators, allValidators]
   )
 
-  const comparisonFlipped = useMemo(
-    () => compareValidators(validatorB, validatorA, allValidators),
-    [validatorA, validatorB, allValidators]
-  )
+  const colTemplate = validators.length === 1
+    ? 'grid-cols-[1fr_110px]'
+    : validators.length === 2
+    ? 'grid-cols-[1fr_100px_100px]'
+    : validators.length === 3
+    ? 'grid-cols-[1fr_90px_90px_90px]'
+    : 'grid-cols-[1fr_80px_80px_80px_80px]'
+
+  // Find best overall
+  const bestOverallIdx = validators.length > 1
+    ? grades.reduce((best, g, i) => g.overallScore > grades[best].overallScore ? i : best, 0)
+    : null
 
   return (
-    <div className="space-y-8">
-      {/* Overall Score Header */}
+    <div className="space-y-6">
+      {/* Overall Scores */}
       <Card className="border-border bg-surface">
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col items-center gap-2 flex-1">
-              <GradeBadge grade={comparison.overallA} size="lg" />
-              <p className="font-display text-sm text-center truncate max-w-[200px]">
-                {validatorA.name || 'Unknown'}
-              </p>
-              {comparison.winner === 'A' && (
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                  Winner
-                </Badge>
-              )}
-            </div>
-
-            <div className="flex flex-col items-center gap-1 px-6">
-              <span className="text-2xl font-display text-muted-foreground">VS</span>
-              {comparison.winner === 'tie' && (
-                <Badge variant="secondary" className="text-muted-foreground">
-                  Tie
-                </Badge>
-              )}
-            </div>
-
-            <div className="flex flex-col items-center gap-2 flex-1">
-              <GradeBadge grade={comparison.overallB} size="lg" />
-              <p className="font-display text-sm text-center truncate max-w-[200px]">
-                {validatorB.name || 'Unknown'}
-              </p>
-              {comparison.winner === 'B' && (
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                  Winner
-                </Badge>
-              )}
-            </div>
+          <div className="flex items-center justify-around gap-4 flex-wrap">
+            {grades.map((g, i) => (
+              <div key={g.validator.vote_account_pubkey} className="flex flex-col items-center gap-2">
+                <GradeBadge grade={g.overall} size={validators.length <= 2 ? 'lg' : 'md'} />
+                <p
+                  className="font-display text-sm text-center truncate max-w-[160px]"
+                  style={{ color: VALIDATOR_COLORS[i] }}
+                >
+                  {g.validator.name || 'Unknown'}
+                </p>
+                {bestOverallIdx === i && validators.length > 1 && (
+                  <span className="text-xs font-medium text-green-400 border border-green-500/30 rounded px-2 py-0.5">
+                    Best Overall
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Category Grade Bars */}
+      {/* Category Overview Bars */}
       <Card className="border-border bg-surface">
         <CardHeader>
           <CardTitle className="font-display text-lg">Category Breakdown</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {Object.entries(categoryGrades).map(([key, { scoreA, scoreB }]) => (
-            <GradeBar
-              key={key}
-              scoreA={scoreA}
-              scoreB={scoreB}
-              label={CATEGORY_LABELS[key]?.label || key}
-            />
+          {categories.map(cat => (
+            <div key={cat.key} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  {cat.label}
+                </span>
+                <div className="flex items-center gap-3">
+                  {cat.grades.map((g, i) => (
+                    <span
+                      key={i}
+                      className="text-sm font-semibold tabular-nums"
+                      style={{ color: g.score === Math.max(...cat.grades.map(x => x.score)) && validators.length > 1 ? '#22c55e' : VALIDATOR_COLORS[i] }}
+                    >
+                      {g.score.toFixed(1)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-1 h-2">
+                {cat.grades.map((g, i) => (
+                  <div key={i} className="flex-1 rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${(g.score / 10) * 100}%`,
+                        backgroundColor: g.score === Math.max(...cat.grades.map(x => x.score)) && validators.length > 1
+                          ? '#22c55e'
+                          : VALIDATOR_COLORS[i] + '80',
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </CardContent>
       </Card>
 
-      {/* Detailed Metric Comparisons */}
-      {Object.entries(comparison.categories).map(([key, category]) => {
-        const flippedCategory = comparisonFlipped.categories[key as keyof typeof comparisonFlipped.categories]
-        const meta = CATEGORY_LABELS[key]
-        return (
-          <Card key={key} className="border-border bg-surface">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="font-display text-base flex items-center gap-2">
-                  <span>{meta?.icon}</span>
-                  {meta?.label || key}
-                </CardTitle>
-                <div className="flex items-center gap-4">
-                  <GradeBadge grade={category.grade} size="sm" />
-                  <GradeBadge grade={flippedCategory.grade} size="sm" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                {/* Header */}
-                <div className="grid grid-cols-[1fr_100px_100px] gap-2 text-xs text-muted-foreground pb-2">
-                  <span>Metric</span>
-                  <span className="text-right truncate">{validatorA.name || 'Val A'}</span>
-                  <span className="text-right truncate">{validatorB.name || 'Val B'}</span>
-                </div>
-                <Separator />
-                {category.metrics.map((metric) => (
-                  <div key={metric.label}>
-                    <div className="grid grid-cols-[1fr_100px_100px] gap-2 py-2 items-center">
-                      <div>
-                        <p className="text-sm font-medium">{metric.label}</p>
-                        {metric.description && (
-                          <p className="text-xs text-muted-foreground">{metric.description}</p>
-                        )}
-                      </div>
-                      <p
-                        className="text-sm text-right font-mono tabular-nums"
-                        style={{
-                          color: metric.winner === 'A' ? '#22c55e' : 'inherit',
-                          fontWeight: metric.winner === 'A' ? 600 : 400,
-                        }}
-                      >
-                        {metric.valueA}
-                      </p>
-                      <p
-                        className="text-sm text-right font-mono tabular-nums"
-                        style={{
-                          color: metric.winner === 'B' ? '#22c55e' : 'inherit',
-                          fontWeight: metric.winner === 'B' ? 600 : 400,
-                        }}
-                      >
-                        {metric.valueB}
-                      </p>
-                    </div>
-                    <Separator />
-                  </div>
+      {/* Detailed Category Cards */}
+      {categories.map(cat => (
+        <Card key={cat.key} className="border-border bg-surface">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-display text-base">{cat.label}</CardTitle>
+              <div className="flex items-center gap-3">
+                {cat.grades.map((g, i) => (
+                  <GradeBadge key={i} grade={g.grade} size="sm" />
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )
-      })}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {/* Column headers */}
+              <div className={`grid ${colTemplate} gap-2 text-xs text-muted-foreground pb-2`}>
+                <span>Metric</span>
+                {validators.map((v, i) => (
+                  <span key={v.vote_account_pubkey} className="text-right truncate" style={{ color: VALIDATOR_COLORS[i] }}>
+                    {v.name || `Val ${i + 1}`}
+                  </span>
+                ))}
+              </div>
+              <Separator />
+              {cat.metrics.map(metric => (
+                <div key={metric.label}>
+                  <div className={`grid ${colTemplate} gap-2 py-2 items-center`}>
+                    <div>
+                      <p className="text-sm font-medium">{metric.label}</p>
+                      <p className="text-xs text-muted-foreground">{metric.description}</p>
+                    </div>
+                    {metric.values.map((val, i) => (
+                      <p
+                        key={i}
+                        className="text-sm text-right font-mono tabular-nums"
+                        style={{
+                          color: metric.bestIdx === i ? '#22c55e' : 'inherit',
+                          fontWeight: metric.bestIdx === i ? 600 : 400,
+                        }}
+                      >
+                        {val.formatted}
+                      </p>
+                    ))}
+                  </div>
+                  <Separator />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
 
-      {/* Quick Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ValidatorInfoCard validator={validatorA} />
-        <ValidatorInfoCard validator={validatorB} />
+      {/* Validator Info Cards */}
+      <div className={`grid grid-cols-1 ${validators.length >= 2 ? 'md:grid-cols-2' : ''} gap-4`}>
+        {validators.map((v, i) => (
+          <ValidatorInfoCard key={v.vote_account_pubkey} validator={v} color={VALIDATOR_COLORS[i]} />
+        ))}
       </div>
     </div>
   )
 }
 
-function ValidatorInfoCard({ validator }: { validator: ValidatorRaw }) {
+function ValidatorInfoCard({ validator, color }: { validator: ValidatorRaw; color: string }) {
   const location = [validator.city, validator.country].filter(Boolean).join(', ') || 'Unknown'
   const client = getClientName(validator.client_type)
 
   return (
     <Card className="border-border bg-surface">
       <CardHeader className="pb-3">
-        <CardTitle className="font-display text-sm truncate">{validator.name || 'Unknown'}</CardTitle>
+        <CardTitle className="font-display text-sm truncate" style={{ color }}>{validator.name || 'Unknown'}</CardTitle>
         <p className="text-xs text-muted-foreground font-mono truncate">{validator.vote_account_pubkey}</p>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
@@ -187,6 +187,7 @@ function ValidatorInfoCard({ validator }: { validator: ValidatorRaw }) {
         <InfoRow label="Stake" value={fmtSol(validator.average_activated_stake)} />
         <InfoRow label="DoubleZero" value={validator.is_dz ? 'Yes' : 'No'} />
         <InfoRow label="SFDP" value={validator.is_sfdp ? 'Yes' : 'No'} />
+        {validator.version && <InfoRow label="Version" value={validator.version} />}
         {validator.epoch_range && <InfoRow label="Epoch Range" value={validator.epoch_range} />}
       </CardContent>
     </Card>

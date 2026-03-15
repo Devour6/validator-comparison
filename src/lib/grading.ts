@@ -1,4 +1,4 @@
-import type { ValidatorRaw, Grade, CategoryGrade, MetricComparison, ComparisonResult } from './types'
+import type { ValidatorRaw, Grade, ValidatorGrades, MetricRow, CategoryData } from './types'
 
 function toGrade(score: number): Grade {
   const s = Math.max(0, Math.min(10, score))
@@ -33,10 +33,17 @@ function fmtApy(v: number): string {
   return v.toFixed(2) + '%'
 }
 
-function winner(a: number, b: number, lowerBetter = false): 'A' | 'B' | 'tie' {
-  if (Math.abs(a - b) < 0.0001) return 'tie'
-  if (lowerBetter) return a < b ? 'A' : 'B'
-  return a > b ? 'A' : 'B'
+function bestIndex(values: number[], lowerBetter: boolean): number | null {
+  if (values.length <= 1) return null
+  let bestIdx = 0
+  let allSame = true
+  for (let i = 1; i < values.length; i++) {
+    if (Math.abs(values[i] - values[0]) > 0.0001) allSame = false
+    if (lowerBetter ? values[i] < values[bestIdx] : values[i] > values[bestIdx]) {
+      bestIdx = i
+    }
+  }
+  return allSame ? null : bestIdx
 }
 
 function scoreSkipRate(skipRate: number): number {
@@ -103,7 +110,6 @@ function scoreStakePoolDiversity(pools: Record<string, number> | undefined): num
 }
 
 function scoreEpochCredits(credits: number): number {
-  // Typical range ~400K-460K for weighted averages
   if (credits >= 450000) return 10
   if (credits >= 440000) return 9
   if (credits >= 430000) return 8
@@ -126,18 +132,10 @@ function getClientName(clientType: number | undefined): string {
 
 function scoreDecentralization(v: ValidatorRaw, allValidators: ValidatorRaw[]): number {
   let score = 5
-
-  // Client diversity: non-Agave/Jito bonus
   const ct = num(v.client_type)
   if (ct >= 2 && ct <= 8) score += 2
-
-  // SFDP participation
   if (v.is_sfdp) score += 1
-
-  // Superminority penalty
   if (v.superminority) score -= 2
-
-  // Geographic diversity
   const cityCount: Record<string, number> = {}
   for (const val of allValidators) {
     const key = (val.city || '') + ',' + (val.country || '')
@@ -148,333 +146,134 @@ function scoreDecentralization(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   if (myCityCount <= 5) score += 2
   else if (myCityCount <= 20) score += 1
   else if (myCityCount > 100) score -= 1
-
   return Math.max(0, Math.min(10, score))
 }
 
-function buildComparison(
-  a: ValidatorRaw,
-  b: ValidatorRaw,
-  allValidators: ValidatorRaw[]
-): {
-  categories: ComparisonResult['categories']
-  overallScore: number
-} {
-  // --- Performance ---
-  const skipA = num(a.avg_skip_rate)
-  const skipB = num(b.avg_skip_rate)
-  const creditsA = num(a.average_epoch_credits)
-  const creditsB = num(b.average_epoch_credits)
-  const txSuccessA = num(a.average_avg_tx_success_rate)
-  const txSuccessB = num(b.average_avg_tx_success_rate)
-  const userTxSuccessA = num(a.average_avg_user_tx_success_rate)
-  const userTxSuccessB = num(b.average_avg_user_tx_success_rate)
-  const buildTimeA = num(a.average_build_time_score)
-  const buildTimeB = num(b.average_build_time_score)
+export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): ValidatorGrades {
+  const skip = num(v.avg_skip_rate)
+  const credits = num(v.average_epoch_credits)
+  const txSuccess = num(v.average_avg_tx_success_rate)
+  const perfScore = (scoreSkipRate(skip) + scoreTxSuccess(txSuccess) + scoreEpochCredits(credits)) / 3
 
-  const perfMetrics: MetricComparison[] = [
-    {
-      label: 'Skip Rate',
-      valueA: pct(skipA), valueB: pct(skipB),
-      rawA: skipA, rawB: skipB,
-      winner: winner(skipA, skipB, true),
-      description: 'Lower is better — % of leader slots missed',
-    },
-    {
-      label: 'Epoch Credits',
-      valueA: fmtNum(creditsA, 0), valueB: fmtNum(creditsB, 0),
-      rawA: creditsA, rawB: creditsB,
-      winner: winner(creditsA, creditsB),
-      description: 'Higher is better — vote credits earned per epoch',
-    },
-    {
-      label: 'Tx Success Rate',
-      valueA: pct(txSuccessA), valueB: pct(txSuccessB),
-      rawA: txSuccessA, rawB: txSuccessB,
-      winner: winner(txSuccessA, txSuccessB),
-      description: 'Higher is better — overall transaction success rate',
-    },
-    {
-      label: 'User Tx Success',
-      valueA: pct(userTxSuccessA), valueB: pct(userTxSuccessB),
-      rawA: userTxSuccessA, rawB: userTxSuccessB,
-      winner: winner(userTxSuccessA, userTxSuccessB),
-      description: 'Higher is better — non-vote transaction success rate',
-    },
-    {
-      label: 'Build Time Score',
-      valueA: fmtNum(buildTimeA, 1), valueB: fmtNum(buildTimeB, 1),
-      rawA: buildTimeA, rawB: buildTimeB,
-      winner: winner(buildTimeA, buildTimeB),
-      description: 'Higher is better — block build efficiency score',
-    },
-  ]
-  const perfScore = (scoreSkipRate(skipA) + scoreTxSuccess(txSuccessA) + scoreEpochCredits(creditsA)) / 3
+  const delegatorApy = num(v.average_delegator_compound_total_apy)
+  const rewardsScore = scoreApy(delegatorApy)
 
-  // --- Rewards & APY ---
-  const overallApyA = num(a.average_compound_overall_apy)
-  const overallApyB = num(b.average_compound_overall_apy)
-  const mevApyA = num(a.average_delegator_compound_mev_apy)
-  const mevApyB = num(b.average_delegator_compound_mev_apy)
-  const blockApyA = num(a.average_delegator_compound_block_rewards_apy)
-  const blockApyB = num(b.average_delegator_compound_block_rewards_apy)
-  const inflApyA = num(a.average_delegator_compound_inflation_apy)
-  const inflApyB = num(b.average_delegator_compound_inflation_apy)
-  const delegatorTotalApyA = num(a.average_delegator_compound_total_apy)
-  const delegatorTotalApyB = num(b.average_delegator_compound_total_apy)
+  const stake = num(v.average_activated_stake)
+  const stakeScore = (scoreStake(stake, allValidators) + scoreStakePoolDiversity(v.stake_pools)) / 2
 
-  const rewardsMetrics: MetricComparison[] = [
-    {
-      label: 'Overall APY',
-      valueA: fmtApy(overallApyA), valueB: fmtApy(overallApyB),
-      rawA: overallApyA, rawB: overallApyB,
-      winner: winner(overallApyA, overallApyB),
-      description: 'Compound overall APY including all sources',
-    },
-    {
-      label: 'Delegator APY',
-      valueA: fmtApy(delegatorTotalApyA), valueB: fmtApy(delegatorTotalApyB),
-      rawA: delegatorTotalApyA, rawB: delegatorTotalApyB,
-      winner: winner(delegatorTotalApyA, delegatorTotalApyB),
-      description: 'Total compound APY earned by delegators',
-    },
-    {
-      label: 'MEV APY',
-      valueA: fmtApy(mevApyA), valueB: fmtApy(mevApyB),
-      rawA: mevApyA, rawB: mevApyB,
-      winner: winner(mevApyA, mevApyB),
-      description: 'Delegator APY from MEV (Jito tips)',
-    },
-    {
-      label: 'Block Rewards APY',
-      valueA: fmtApy(blockApyA), valueB: fmtApy(blockApyB),
-      rawA: blockApyA, rawB: blockApyB,
-      winner: winner(blockApyA, blockApyB),
-      description: 'Delegator APY from block rewards',
-    },
-    {
-      label: 'Inflation APY',
-      valueA: fmtApy(inflApyA), valueB: fmtApy(inflApyB),
-      rawA: inflApyA, rawB: inflApyB,
-      winner: winner(inflApyA, inflApyB),
-      description: 'Delegator APY from Solana inflation',
-    },
-  ]
-  const rewardsScore = scoreApy(delegatorTotalApyA)
+  const comm = num(v.average_commission)
+  const commScore = scoreCommission(comm)
 
-  // --- Stake ---
-  const stakeA = num(a.average_activated_stake)
-  const stakeB = num(b.average_activated_stake)
-  const poolStakeA = num(a.total_from_stake_pools)
-  const poolStakeB = num(b.total_from_stake_pools)
-  const nativeStakeA = num(a.total_not_from_stake_pools)
-  const nativeStakeB = num(b.total_not_from_stake_pools)
-  const poolCountA = a.stake_pools ? Object.values(a.stake_pools).filter(v => v > 0).length : 0
-  const poolCountB = b.stake_pools ? Object.values(b.stake_pools).filter(v => v > 0).length : 0
+  const decentScore = scoreDecentralization(v, allValidators)
 
-  const stakeMetrics: MetricComparison[] = [
-    {
-      label: 'Activated Stake',
-      valueA: fmtSol(stakeA), valueB: fmtSol(stakeB),
-      rawA: stakeA, rawB: stakeB,
-      winner: winner(stakeA, stakeB),
-      description: 'Total active stake delegated to validator',
-    },
-    {
-      label: 'Pool Stake',
-      valueA: fmtSol(poolStakeA), valueB: fmtSol(poolStakeB),
-      rawA: poolStakeA, rawB: poolStakeB,
-      winner: winner(poolStakeA, poolStakeB),
-      description: 'Stake from pools (Jito, Marinade, etc.)',
-    },
-    {
-      label: 'Native Stake',
-      valueA: fmtSol(nativeStakeA), valueB: fmtSol(nativeStakeB),
-      rawA: nativeStakeA, rawB: nativeStakeB,
-      winner: winner(nativeStakeA, nativeStakeB),
-      description: 'Direct delegator stake (non-pool)',
-    },
-    {
-      label: 'Stake Pools',
-      valueA: poolCountA.toString(), valueB: poolCountB.toString(),
-      rawA: poolCountA, rawB: poolCountB,
-      winner: winner(poolCountA, poolCountB),
-      description: 'Number of pools delegating to this validator',
-    },
-  ]
-  const stakeScore = (scoreStake(stakeA, allValidators) + scoreStakePoolDiversity(a.stake_pools)) / 2
+  const ibrl = num(v.average_ibrl_score)
+  const reliScore = (Math.min(10, ibrl / 10) + scoreSkipRate(skip) + scoreEpochCredits(credits)) / 3
 
-  // --- Commission ---
-  const commA = num(a.average_commission)
-  const commB = num(b.average_commission)
-  const prioCommA = num(a.average_priority_fee_commission)
-  const prioCommB = num(b.average_priority_fee_commission)
-  const mevCommA = num(a.average_mev_commission)
-  const mevCommB = num(b.average_mev_commission)
-
-  const commMetrics: MetricComparison[] = [
-    {
-      label: 'Commission',
-      valueA: pct(commA), valueB: pct(commB),
-      rawA: commA, rawB: commB,
-      winner: winner(commA, commB, true),
-      description: 'Lower is better — commission on inflation rewards',
-    },
-    {
-      label: 'Priority Fee Commission',
-      valueA: pct(prioCommA), valueB: pct(prioCommB),
-      rawA: prioCommA, rawB: prioCommB,
-      winner: winner(prioCommA, prioCommB, true),
-      description: 'Lower is better — commission on priority fees',
-    },
-    {
-      label: 'MEV Commission',
-      valueA: pct(mevCommA), valueB: pct(mevCommB),
-      rawA: mevCommA, rawB: mevCommB,
-      winner: winner(mevCommA, mevCommB, true),
-      description: 'Lower is better — commission on MEV earnings',
-    },
-  ]
-  const commScore = scoreCommission(commA)
-
-  // --- Decentralization ---
-  const clientA = getClientName(a.client_type)
-  const clientB = getClientName(b.client_type)
-  const locationA = [a.city, a.country].filter(Boolean).join(', ') || 'Unknown'
-  const locationB = [b.city, b.country].filter(Boolean).join(', ') || 'Unknown'
-  const decentScoreA = scoreDecentralization(a, allValidators)
-
-  const decentMetrics: MetricComparison[] = [
-    {
-      label: 'Client',
-      valueA: clientA, valueB: clientB,
-      rawA: decentScoreA, rawB: scoreDecentralization(b, allValidators),
-      winner: winner(decentScoreA, scoreDecentralization(b, allValidators)),
-      description: 'Minority clients benefit network health',
-    },
-    {
-      label: 'Location',
-      valueA: locationA, valueB: locationB,
-      rawA: 0, rawB: 0,
-      winner: 'tie',
-      description: 'Geographic location of the validator',
-    },
-    {
-      label: 'SFDP',
-      valueA: a.is_sfdp ? 'Yes' : 'No', valueB: b.is_sfdp ? 'Yes' : 'No',
-      rawA: a.is_sfdp ? 1 : 0, rawB: b.is_sfdp ? 1 : 0,
-      winner: a.is_sfdp === b.is_sfdp ? 'tie' : a.is_sfdp ? 'A' : 'B',
-      description: 'Solana Foundation Delegation Program member',
-    },
-    {
-      label: 'Superminority',
-      valueA: a.superminority ? 'Yes' : 'No', valueB: b.superminority ? 'Yes' : 'No',
-      rawA: a.superminority ? 0 : 1, rawB: b.superminority ? 0 : 1,
-      winner: a.superminority === b.superminority ? 'tie' : !a.superminority ? 'A' : 'B',
-      description: 'Not in superminority is better for decentralization',
-    },
-  ]
-
-  // --- Reliability ---
-  const ibrlA = num(a.average_ibrl_score)
-  const ibrlB = num(b.average_ibrl_score)
-  const votePackA = num(a.average_vote_packing_score)
-  const votePackB = num(b.average_vote_packing_score)
-  const latencyA = num(a.average_mean_vote_latency)
-  const latencyB = num(b.average_mean_vote_latency)
-  const jip25A = num(a.jip25_rank)
-  const jip25B = num(b.jip25_rank)
-
-  const reliabilityMetrics: MetricComparison[] = [
-    {
-      label: 'IBRL Score',
-      valueA: fmtNum(ibrlA, 1), valueB: fmtNum(ibrlB, 1),
-      rawA: ibrlA, rawB: ibrlB,
-      winner: winner(ibrlA, ibrlB),
-      description: 'Higher is better — inclusivity/build reliability score',
-    },
-    {
-      label: 'Vote Packing',
-      valueA: fmtNum(votePackA, 1), valueB: fmtNum(votePackB, 1),
-      rawA: votePackA, rawB: votePackB,
-      winner: winner(votePackA, votePackB),
-      description: 'Higher is better — vote transaction packing efficiency',
-    },
-    {
-      label: 'Vote Latency',
-      valueA: fmtNum(latencyA, 3) + ' slots', valueB: fmtNum(latencyB, 3) + ' slots',
-      rawA: latencyA, rawB: latencyB,
-      winner: winner(latencyA, latencyB, true),
-      description: 'Lower is better — mean vote latency in slots',
-    },
-    {
-      label: 'JIP-25 Rank',
-      valueA: jip25A > 0 ? '#' + fmtNum(jip25A, 0) : 'N/A',
-      valueB: jip25B > 0 ? '#' + fmtNum(jip25B, 0) : 'N/A',
-      rawA: jip25A, rawB: jip25B,
-      winner: jip25A > 0 && jip25B > 0 ? winner(jip25A, jip25B, true) : 'tie',
-      description: 'Lower rank is better — Jito StakeNet eligibility',
-    },
-  ]
-  const reliScore = (Math.min(10, ibrlA / 10) + scoreSkipRate(skipA) + scoreEpochCredits(creditsA)) / 3
-
-  // --- Overall ---
   const weights = { performance: 0.25, rewards: 0.25, stake: 0.1, commission: 0.15, decentralization: 0.1, reliability: 0.15 }
   const overallScore = perfScore * weights.performance + rewardsScore * weights.rewards +
     stakeScore * weights.stake + commScore * weights.commission +
-    decentScoreA * weights.decentralization + reliScore * weights.reliability
+    decentScore * weights.decentralization + reliScore * weights.reliability
 
   return {
-    categories: {
-      performance: { grade: toGrade(perfScore), metrics: perfMetrics },
-      rewards: { grade: toGrade(rewardsScore), metrics: rewardsMetrics },
-      stake: { grade: toGrade(stakeScore), metrics: stakeMetrics },
-      commission: { grade: toGrade(commScore), metrics: commMetrics },
-      decentralization: { grade: toGrade(decentScoreA), metrics: decentMetrics },
-      reliability: { grade: toGrade(reliScore), metrics: reliabilityMetrics },
-    },
+    validator: v,
+    overall: toGrade(overallScore),
     overallScore,
+    categories: {
+      performance: { grade: toGrade(perfScore), score: perfScore },
+      rewards: { grade: toGrade(rewardsScore), score: rewardsScore },
+      stake: { grade: toGrade(stakeScore), score: stakeScore },
+      commission: { grade: toGrade(commScore), score: commScore },
+      decentralization: { grade: toGrade(decentScore), score: decentScore },
+      reliability: { grade: toGrade(reliScore), score: reliScore },
+    },
   }
 }
 
-export function compareValidators(
-  a: ValidatorRaw,
-  b: ValidatorRaw,
+export function buildCategoryData(
+  validators: ValidatorRaw[],
   allValidators: ValidatorRaw[]
-): ComparisonResult {
-  const resultA = buildComparison(a, b, allValidators)
-  const resultB = buildComparison(b, a, allValidators)
+): CategoryData[] {
+  const grades = validators.map(v => gradeValidator(v, allValidators))
 
-  const diff = resultA.overallScore - resultB.overallScore
-
-  return {
-    validatorA: a,
-    validatorB: b,
-    categories: resultA.categories,
-    overallA: toGrade(resultA.overallScore),
-    overallB: toGrade(resultB.overallScore),
-    winner: Math.abs(diff) < 0.3 ? 'tie' : diff > 0 ? 'A' : 'B',
+  function row(label: string, getter: (v: ValidatorRaw) => number, formatter: (n: number) => string, lowerBetter: boolean, description: string): MetricRow {
+    const values = validators.map(v => ({ formatted: formatter(getter(v)), raw: getter(v) }))
+    return { label, values, bestIdx: bestIndex(values.map(x => x.raw), lowerBetter), lowerBetter, description }
   }
+
+  function textRow(label: string, getter: (v: ValidatorRaw) => string, description: string): MetricRow {
+    const values = validators.map(v => ({ formatted: getter(v), raw: 0 }))
+    return { label, values, bestIdx: null, lowerBetter: false, description }
+  }
+
+  return [
+    {
+      key: 'performance',
+      label: 'Performance',
+      grades: grades.map(g => g.categories.performance),
+      metrics: [
+        row('Skip Rate', v => num(v.avg_skip_rate), pct, true, 'Lower is better -- % of leader slots missed'),
+        row('Epoch Credits', v => num(v.average_epoch_credits), v => fmtNum(v, 0), false, 'Higher is better -- vote credits earned per epoch'),
+        row('Tx Success Rate', v => num(v.average_avg_tx_success_rate), pct, false, 'Higher is better -- overall transaction success rate'),
+        row('User Tx Success', v => num(v.average_avg_user_tx_success_rate), pct, false, 'Higher is better -- non-vote transaction success rate'),
+        row('Build Time Score', v => num(v.average_build_time_score), v => fmtNum(v, 1), false, 'Higher is better -- block build efficiency score'),
+      ],
+    },
+    {
+      key: 'rewards',
+      label: 'APY & Rewards',
+      grades: grades.map(g => g.categories.rewards),
+      metrics: [
+        row('Overall APY', v => num(v.average_compound_overall_apy), fmtApy, false, 'Compound overall APY including all sources'),
+        row('Delegator APY', v => num(v.average_delegator_compound_total_apy), fmtApy, false, 'Total compound APY earned by delegators'),
+        row('MEV APY', v => num(v.average_delegator_compound_mev_apy), fmtApy, false, 'Delegator APY from MEV (Jito tips)'),
+        row('Block Rewards APY', v => num(v.average_delegator_compound_block_rewards_apy), fmtApy, false, 'Delegator APY from block rewards'),
+        row('Inflation APY', v => num(v.average_delegator_compound_inflation_apy), fmtApy, false, 'Delegator APY from Solana inflation'),
+      ],
+    },
+    {
+      key: 'stake',
+      label: 'Stake & Trust',
+      grades: grades.map(g => g.categories.stake),
+      metrics: [
+        row('Activated Stake', v => num(v.average_activated_stake), fmtSol, false, 'Total active stake delegated to validator'),
+        row('Pool Stake', v => num(v.total_from_stake_pools), fmtSol, false, 'Stake from pools (Jito, Marinade, etc.)'),
+        row('Native Stake', v => num(v.total_not_from_stake_pools), fmtSol, false, 'Direct delegator stake (non-pool)'),
+        row('Stake Pools', v => v.stake_pools ? Object.values(v.stake_pools).filter(x => x > 0).length : 0, v => fmtNum(v, 0), false, 'Number of pools delegating to this validator'),
+      ],
+    },
+    {
+      key: 'commission',
+      label: 'Commission',
+      grades: grades.map(g => g.categories.commission),
+      metrics: [
+        row('Commission', v => num(v.average_commission), pct, true, 'Lower is better -- commission on inflation rewards'),
+        row('Priority Fee Commission', v => num(v.average_priority_fee_commission), pct, true, 'Lower is better -- commission on priority fees'),
+        row('MEV Commission', v => num(v.average_mev_commission), pct, true, 'Lower is better -- commission on MEV earnings'),
+      ],
+    },
+    {
+      key: 'decentralization',
+      label: 'Decentralization',
+      grades: grades.map(g => g.categories.decentralization),
+      metrics: [
+        textRow('Client', v => getClientName(v.client_type), 'Minority clients benefit network health'),
+        textRow('Location', v => [v.city, v.country].filter(Boolean).join(', ') || 'Unknown', 'Geographic location of the validator'),
+        textRow('SFDP', v => v.is_sfdp ? 'Yes' : 'No', 'Solana Foundation Delegation Program member'),
+        textRow('Superminority', v => v.superminority ? 'Yes' : 'No', 'Not in superminority is better for decentralization'),
+      ],
+    },
+    {
+      key: 'reliability',
+      label: 'Reliability',
+      grades: grades.map(g => g.categories.reliability),
+      metrics: [
+        row('IBRL Score', v => num(v.average_ibrl_score), v => fmtNum(v, 1), false, 'Higher is better -- inclusivity/build reliability score'),
+        row('Vote Packing', v => num(v.average_vote_packing_score), v => fmtNum(v, 1), false, 'Higher is better -- vote transaction packing efficiency'),
+        row('Vote Latency', v => num(v.average_mean_vote_latency), v => fmtNum(v, 3) + ' slots', true, 'Lower is better -- mean vote latency in slots'),
+        row('JIP-25 Rank', v => num(v.jip25_rank), v => v > 0 ? '#' + fmtNum(v, 0) : 'N/A', true, 'Lower rank is better -- Jito StakeNet eligibility'),
+      ],
+    },
+  ]
 }
 
-export function getCategoryGrades(
-  a: ValidatorRaw,
-  b: ValidatorRaw,
-  allValidators: ValidatorRaw[]
-): Record<string, { scoreA: number; scoreB: number; gradeA: Grade; gradeB: Grade }> {
-  const resultA = buildComparison(a, b, allValidators)
-  const resultB = buildComparison(b, a, allValidators)
-
-  const out: Record<string, { scoreA: number; scoreB: number; gradeA: Grade; gradeB: Grade }> = {}
-  for (const key of Object.keys(resultA.categories) as (keyof typeof resultA.categories)[]) {
-    out[key] = {
-      scoreA: resultA.categories[key].grade.score,
-      scoreB: resultB.categories[key].grade.score,
-      gradeA: resultA.categories[key].grade,
-      gradeB: resultB.categories[key].grade,
-    }
-  }
-  return out
-}
-
-export { toGrade, getClientName }
+export { toGrade, getClientName, num }
