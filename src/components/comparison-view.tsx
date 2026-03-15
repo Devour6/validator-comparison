@@ -112,17 +112,19 @@ export function ComparisonView({ validators, allValidators }: ComparisonViewProp
       {categories.map(cat => (
         <Card key={cat.key} className="border-border bg-surface">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="font-display text-base">{cat.label}</CardTitle>
-              <div className="flex items-center gap-3">
-                {cat.grades.map((g, i) => (
-                  <GradeBadge key={i} grade={g.grade} size="sm" />
-                ))}
-              </div>
-            </div>
+            <CardTitle className="font-display text-base">{cat.label}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
+              {/* Grade badges row - aligned to columns */}
+              <div className={`grid ${colTemplate} gap-2 pb-3`}>
+                <span />
+                {cat.grades.map((g, i) => (
+                  <div key={i} className="flex justify-end">
+                    <GradeBadge grade={g.grade} size="sm" />
+                  </div>
+                ))}
+              </div>
               {/* Column headers */}
               <div className={`grid ${colTemplate} gap-2 text-xs text-muted-foreground pb-2`}>
                 <span>Metric</span>
