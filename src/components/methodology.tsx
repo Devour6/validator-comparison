@@ -28,26 +28,25 @@ const CATEGORIES = [
   {
     name: 'APY & Rewards',
     weight: '25%',
-    description: 'Evaluates the returns a delegator can expect. Focuses on the total compound APY that delegators actually receive after validator commissions.',
+    description: 'Evaluates the returns a delegator can expect. Uses percentile-based scoring -- validators are ranked against all other validators, so even small APY differences produce meaningful grade separation.',
     metrics: [
-      { name: 'Delegator APY', scoring: 'Primary metric. Scored on a 3-10 scale. 9%+ = 10, 8.5%+ = 9, 8%+ = 8.5, 7.5%+ = 8, 7%+ = 7, 6.5%+ = 6, 6%+ = 5, 5%+ = 4, below = 3. This is the compound total APY delegators receive.' },
+      { name: 'Delegator APY', scoring: 'Primary metric. Scored by percentile rank among all validators (3-10 scale). A validator at the 90th percentile scores ~9.3 (S), 70th percentile ~7.9 (B+), 50th percentile ~6.5 (B). This ensures realistic grade spread even when APYs cluster tightly.' },
       { name: 'Overall APY', scoring: 'Shown for comparison. The full compound APY before validator/delegator split.' },
       { name: 'MEV APY', scoring: 'Shown for comparison. Delegator APY from Jito MEV tips.' },
       { name: 'Block Rewards APY', scoring: 'Shown for comparison. Delegator APY from priority fee block rewards.' },
       { name: 'Inflation APY', scoring: 'Shown for comparison. Delegator APY from Solana\'s inflation schedule.' },
     ],
-    formula: 'Category Score = Delegator APY Score',
+    formula: 'Category Score = Delegator APY Percentile Score (3-10 range)',
   },
   {
     name: 'Stake & Trust',
     weight: '10%',
-    description: 'Assesses how much the network trusts this validator, measured by the amount and diversity of delegated stake.',
+    description: 'Measures institutional trust through stake pool diversity. Raw stake amount is intentionally excluded -- high stake does not indicate a quality validator. What matters is how many independent stake pools have chosen to delegate.',
     metrics: [
-      { name: 'Activated Stake', scoring: 'Scored by percentile ranking among all validators. Higher percentile = higher score (3-10 range). More stake generally indicates more trust and track record.' },
-      { name: 'Stake Pool Diversity', scoring: 'Scored by the number of stake pools delegating. 5+ pools = 10, 4 = 9, 3 = 8, 2 = 7, 1 = 5, none = 3. More pools means more institutional trust.' },
-      { name: 'Pool Stake / Native Stake', scoring: 'Shown for comparison. Breakdown of where stake comes from.' },
+      { name: 'Stake Pool Diversity', scoring: 'Scored by the number of stake pools delegating. 5+ pools = 10, 4 = 9, 3 = 8, 2 = 7, 1 = 5, none = 3. More pools means more independent institutions trust this validator.' },
+      { name: 'Activated Stake / Pool Stake / Native Stake', scoring: 'Shown for context only -- not factored into the grade.' },
     ],
-    formula: 'Category Score = (Stake Percentile Score + Pool Diversity Score) / 2',
+    formula: 'Category Score = Pool Diversity Score',
   },
   {
     name: 'Commission',

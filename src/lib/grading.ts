@@ -58,16 +58,18 @@ function scoreSkipRate(skipRate: number): number {
   return 2
 }
 
-function scoreApy(apy: number): number {
-  if (apy >= 9) return 10
-  if (apy >= 8.5) return 9
-  if (apy >= 8) return 8.5
-  if (apy >= 7.5) return 8
-  if (apy >= 7) return 7
-  if (apy >= 6.5) return 6
-  if (apy >= 6) return 5
-  if (apy >= 5) return 4
-  return 3
+function scoreApy(apy: number, allValidators: ValidatorRaw[]): number {
+  // Percentile-based scoring -- spreads validators across the full grade range
+  // based on where they rank against all other validators
+  const apys = allValidators
+    .map(v => num(v.average_delegator_compound_total_apy))
+    .filter(a => a > 0)
+    .sort((a, b) => a - b)
+  if (apys.length === 0) return 5
+  const idx = apys.findIndex(a => a >= apy)
+  const percentile = (idx >= 0 ? idx : apys.length) / apys.length
+  // Scale from 3 to 10 based on percentile position
+  return Math.round((3 + percentile * 7) * 10) / 10
 }
 
 function scoreCommission(commission: number): number {
@@ -156,10 +158,10 @@ export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   const perfScore = (scoreSkipRate(skip) + scoreTxSuccess(txSuccess) + scoreEpochCredits(credits)) / 3
 
   const delegatorApy = num(v.average_delegator_compound_total_apy)
-  const rewardsScore = scoreApy(delegatorApy)
+  const rewardsScore = scoreApy(delegatorApy, allValidators)
 
-  const stake = num(v.average_activated_stake)
-  const stakeScore = (scoreStake(stake, allValidators) + scoreStakePoolDiversity(v.stake_pools)) / 2
+  // Trust scored purely on pool diversity -- raw stake amount doesn't indicate quality
+  const stakeScore = scoreStakePoolDiversity(v.stake_pools)
 
   const comm = num(v.average_commission)
   const commScore = scoreCommission(comm)
