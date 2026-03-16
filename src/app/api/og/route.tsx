@@ -9,7 +9,7 @@ const CATEGORIES = [
   { key: 'rewards', label: 'APY & Rewards' },
   { key: 'stake', label: 'Stake Div.' },
   { key: 'commission', label: 'Commission' },
-  { key: 'decentralization', label: 'Decentralization' },
+  { key: 'decentralization', label: 'Decentral.' },
   { key: 'reliability', label: 'Reliability' },
 ]
 
@@ -29,13 +29,11 @@ export async function GET(request: Request) {
   const pubkeys = searchParams.getAll('v').slice(0, 4)
     .filter(pk => pk === NETWORK_AVERAGE_PUBKEY || PUBKEY_RE.test(pk))
 
-  // Fetch fonts in parallel — graceful fallback if Google Fonts unreachable
   const [audiowide, outfit] = await Promise.all([
     loadFont('https://fonts.gstatic.com/s/audiowide/v22/l7gdbjpo0cum0ckerWCtkQ.ttf'),
     loadFont('https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4E.ttf'),
   ])
 
-  // Fetch all validators from Trillium
   let allValidators: ValidatorRaw[] = []
   try {
     const res = await fetch(TRILLIUM_URL, { next: { revalidate: 300 } })
@@ -46,7 +44,6 @@ export async function GET(request: Request) {
     console.error('OG route: Trillium fetch failed', e)
   }
 
-  // Resolve pubkeys to validators
   const networkAvg = allValidators.length > 0 ? buildAverageValidator(allValidators) : null
   const validators = pubkeys
     .map(pk => {
@@ -55,16 +52,25 @@ export async function GET(request: Request) {
     })
     .filter((v): v is ValidatorRaw => v !== null)
 
-  // Grade each validator
   const grades = validators.map(v => gradeValidator(v, allValidators))
-
-  // Adaptive sizing
   const count = validators.length
-  const circleSize = count <= 2 ? 80 : count === 3 ? 68 : 58
-  const circleFontSize = count <= 2 ? 26 : count === 3 ? 22 : 18
-  const circleGap = count <= 2 ? 60 : count === 3 ? 40 : 28
-  const labelWidth = count <= 2 ? 130 : count === 3 ? 120 : 105
-  const barGap = count <= 2 ? 8 : 6
+
+  // Adaptive sizing for card-based layout
+  const cardWidth = count === 1 ? 420 : count === 2 ? 360 : count === 3 ? 300 : 240
+  const cardGap = count <= 2 ? 28 : count === 3 ? 22 : 16
+  const circleSize = count <= 2 ? 96 : count === 3 ? 82 : 64
+  const scoreFontSize = count <= 2 ? 36 : count === 3 ? 30 : 24
+  const gradeLetterSize = count <= 2 ? 20 : count === 3 ? 18 : 15
+  const nameFontSize = count <= 2 ? 16 : count === 3 ? 14 : 12
+  const catLabelSize = count <= 2 ? 14 : count === 3 ? 13 : 11
+  const catScoreSize = count <= 2 ? 15 : count === 3 ? 14 : 12
+  const cardPadX = count <= 2 ? 32 : count === 3 ? 24 : 18
+  const cardPadTop = count <= 2 ? 34 : count === 3 ? 28 : 20
+  const cardPadBottom = count <= 2 ? 28 : count === 3 ? 22 : 16
+  const catRowGap = count <= 2 ? 14 : count === 3 ? 12 : 8
+  const sectionGap = count <= 2 ? 22 : count === 3 ? 18 : 14
+  const nameMaxLen = count <= 2 ? 22 : count === 3 ? 18 : 14
+  const dotSize = count <= 2 ? 7 : count === 3 ? 6 : 5
 
   const showGeneric = grades.length === 0
 
@@ -76,6 +82,7 @@ export async function GET(request: Request) {
         width: '100%',
         height: '100%',
         backgroundColor: '#0F0E0C',
+        backgroundImage: 'radial-gradient(ellipse 80% 50% at 50% 50%, rgba(251, 146, 60, 0.035) 0%, rgba(15, 14, 12, 0) 100%)',
         fontFamily: 'Outfit',
         color: '#F3EED9',
       }}
@@ -85,43 +92,29 @@ export async function GET(request: Request) {
         style={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           padding: '28px 48px 0',
-          gap: 14,
         }}
       >
-        {/* Phase text logo since image loading is unreliable */}
-        <div
+        <span
           style={{
-            display: 'flex',
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            backgroundColor: 'rgba(243,238,217,0.08)',
-            border: '1px solid rgba(243,238,217,0.15)',
-            alignItems: 'center',
-            justifyContent: 'center',
             fontFamily: 'Audiowide',
-            fontSize: 18,
+            fontSize: 24,
             color: '#F3EED9',
+            letterSpacing: '0.02em',
           }}
         >
-          P
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span
-            style={{
-              fontFamily: 'Audiowide',
-              fontSize: 24,
-              color: '#F3EED9',
-              letterSpacing: '0.02em',
-            }}
-          >
-            Validator Comparison
-          </span>
-          <span style={{ fontSize: 12, color: 'rgba(243,238,217,0.4)' }}>
-            by Phase
-          </span>
-        </div>
+          Validator Comparison
+        </span>
+        <span
+          style={{
+            fontFamily: 'Audiowide',
+            fontSize: 16,
+            color: 'rgba(243, 238, 217, 0.45)',
+          }}
+        >
+          Phase
+        </span>
       </div>
 
       {showGeneric ? (
@@ -131,201 +124,222 @@ export async function GET(request: Request) {
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
-            flexDirection: 'column',
-            gap: 16,
           }}
         >
-          <span style={{ fontFamily: 'Audiowide', fontSize: 36, color: '#F3EED9' }}>
-            Phase
-          </span>
-          <span style={{ fontSize: 18, color: 'rgba(243,238,217,0.5)' }}>
-            Compare Solana validators side-by-side
-          </span>
-        </div>
-      ) : (
-        <>
-          {/* Overall Grades Row */}
           <div
             style={{
               display: 'flex',
-              justifyContent: 'center',
-              gap: circleGap,
-              padding: '28px 48px 24px',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 20,
+              padding: '44px 72px',
+              borderRadius: 20,
+              backgroundColor: 'rgba(243, 238, 217, 0.03)',
+              border: '1px solid rgba(243, 238, 217, 0.07)',
             }}
           >
-            {grades.map((g, i) => {
-              const name =
-                g.validator.vote_account_pubkey === NETWORK_AVERAGE_PUBKEY
-                  ? 'Network Average'
-                  : g.validator.name || 'Unknown'
-              const truncName = name.length > 20 ? name.slice(0, 18) + '...' : name
-              return (
+            <span style={{ fontFamily: 'Audiowide', fontSize: 44, color: '#F3EED9' }}>
+              Phase
+            </span>
+            <span style={{ fontSize: 18, color: 'rgba(243, 238, 217, 0.5)' }}>
+              Compare Solana validators side-by-side
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: cardGap,
+            padding: '16px 48px',
+          }}
+        >
+          {grades.map((g, i) => {
+            const name =
+              g.validator.vote_account_pubkey === NETWORK_AVERAGE_PUBKEY
+                ? 'Network Average'
+                : g.validator.name || 'Unknown'
+            const truncName = name.length > nameMaxLen ? name.slice(0, nameMaxLen - 2) + '...' : name
+            const validatorColor = VALIDATOR_COLORS[i]
+            const gradeColor = g.overall.color
+
+            return (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: cardWidth,
+                  backgroundColor: 'rgba(243, 238, 217, 0.025)',
+                  border: '1px solid rgba(243, 238, 217, 0.06)',
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 24px rgba(0, 0, 0, 0.25)',
+                }}
+              >
+                {/* Top accent bar */}
                 <div
-                  key={i}
+                  style={{
+                    display: 'flex',
+                    height: 4,
+                    backgroundColor: validatorColor,
+                    width: '100%',
+                  }}
+                />
+
+                {/* Card content */}
+                <div
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 8,
+                    padding: `${cardPadTop}px ${cardPadX}px ${cardPadBottom}px`,
                   }}
                 >
-                  {/* Grade circle */}
+                  {/* Grade circle with filled background and glow */}
                   <div
                     style={{
                       width: circleSize,
                       height: circleSize,
                       borderRadius: '50%',
-                      border: `3px solid ${g.overall.color}`,
+                      border: `2.5px solid ${gradeColor}`,
+                      backgroundColor: `${gradeColor}1A`,
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      boxShadow: `0 0 20px ${gradeColor}25`,
                     }}
                   >
                     <span
                       style={{
-                        fontSize: circleFontSize,
+                        fontSize: scoreFontSize,
                         fontWeight: 700,
-                        color: g.overall.color,
+                        color: gradeColor,
+                        lineHeight: 1,
                       }}
                     >
                       {g.overallScore.toFixed(1)}
                     </span>
                   </div>
+
                   {/* Grade letter */}
                   <span
                     style={{
-                      fontSize: 16,
+                      fontSize: gradeLetterSize,
                       fontWeight: 600,
-                      color: g.overall.color,
+                      color: gradeColor,
+                      marginTop: 10,
                     }}
                   >
                     {g.overall.label}
                   </span>
+
                   {/* Validator name */}
                   <span
                     style={{
                       fontFamily: 'Audiowide',
-                      fontSize: 13,
-                      color: VALIDATOR_COLORS[i],
+                      fontSize: nameFontSize,
+                      color: validatorColor,
+                      marginTop: count <= 2 ? 14 : 10,
+                      textAlign: 'center',
                     }}
                   >
                     {truncName}
                   </span>
-                </div>
-              )
-            })}
-          </div>
 
-          {/* Divider */}
-          <div
-            style={{
-              display: 'flex',
-              margin: '0 48px',
-              height: 1,
-              backgroundColor: 'rgba(243,238,217,0.1)',
-            }}
-          />
+                  {/* Divider */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      width: '100%',
+                      height: 1,
+                      backgroundColor: 'rgba(243, 238, 217, 0.08)',
+                      marginTop: sectionGap,
+                      marginBottom: sectionGap,
+                    }}
+                  />
 
-          {/* Category Bars */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-              padding: '20px 48px',
-              flex: 1,
-            }}
-          >
-            {CATEGORIES.map(cat => (
-              <div
-                key={cat.key}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                }}
-              >
-                {/* Category label */}
-                <span
-                  style={{
-                    width: labelWidth,
-                    fontSize: 13,
-                    color: 'rgba(243,238,217,0.5)',
-                    flexShrink: 0,
-                  }}
-                >
-                  {cat.label}
-                </span>
-                {/* Bars */}
-                <div style={{ display: 'flex', flex: 1, gap: barGap }}>
-                  {grades.map((g, i) => {
-                    const catData = g.categories[cat.key]
-                    const score = catData?.score ?? 0
-                    const pct = Math.max(2, Math.min(100, (score / 10) * 100))
-                    return (
-                      <div
-                        key={i}
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          flex: 1,
-                          gap: 3,
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: VALIDATOR_COLORS[i],
-                              fontWeight: 600,
-                            }}
-                          >
-                            {score.toFixed(1)}
-                          </span>
-                        </div>
+                  {/* Category scores */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      width: '100%',
+                      gap: catRowGap,
+                    }}
+                  >
+                    {CATEGORIES.map(cat => {
+                      const catData = g.categories[cat.key]
+                      const score = catData?.score ?? 0
+                      const catColor = catData?.grade?.color ?? '#F3EED9'
+                      return (
                         <div
+                          key={cat.key}
                           style={{
                             display: 'flex',
-                            height: 10,
-                            borderRadius: 5,
-                            backgroundColor: 'rgba(243,238,217,0.06)',
-                            overflow: 'hidden',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
                           }}
                         >
+                          <span
+                            style={{
+                              fontSize: catLabelSize,
+                              color: 'rgba(243, 238, 217, 0.4)',
+                            }}
+                          >
+                            {cat.label}
+                          </span>
                           <div
                             style={{
-                              width: `${pct}%`,
-                              height: '100%',
-                              borderRadius: 5,
-                              backgroundColor: VALIDATOR_COLORS[i],
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
                             }}
-                          />
+                          >
+                            <div
+                              style={{
+                                width: dotSize,
+                                height: dotSize,
+                                borderRadius: '50%',
+                                backgroundColor: catColor,
+                              }}
+                            />
+                            <span
+                              style={{
+                                fontSize: catScoreSize,
+                                fontWeight: 600,
+                                color: catColor,
+                              }}
+                            >
+                              {score.toFixed(1)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </>
+            )
+          })}
+        </div>
       )}
 
       {/* Footer */}
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: 'center',
           alignItems: 'center',
-          padding: '14px 48px 22px',
-          borderTop: '1px solid rgba(243,238,217,0.08)',
+          padding: '0 48px 24px',
         }}
       >
-        <span style={{ fontSize: 12, color: 'rgba(243,238,217,0.35)' }}>
+        <span style={{ fontSize: 13, color: 'rgba(243, 238, 217, 0.25)' }}>
           validator-comparison.vercel.app
-        </span>
-        <span style={{ fontFamily: 'Audiowide', fontSize: 14, color: 'rgba(243,238,217,0.4)' }}>
-          Phase
         </span>
       </div>
     </div>
