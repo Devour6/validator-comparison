@@ -171,10 +171,17 @@ function scoreDecentralization(v: ValidatorRaw): number {
   if (isMinorityClient(v.client_type)) score += 2
   // SFDP membership
   if (v.is_sfdp) score += 1
-  // DoubleZero membership -- contributes to network infrastructure
-  if (v.is_dz) score += 1
   // Superminority penalty
   if (v.superminority) score -= 2
+  // Geographic diversity by continent -- most stake is in Europe/NA
+  const continent = (v.continent || '').toLowerCase()
+  const country = (v.country || '').toLowerCase()
+  if (continent === 'europe' || continent === 'north america' || country === 'united states' || country === 'germany' || country === 'netherlands') {
+    score -= 1 // majority of validators are here
+  } else if (continent === 'south america' || continent === 'africa' || continent === 'oceania') {
+    score += 1 // rare locations help decentralization
+  }
+  // Asia/other: no adjustment (moderate)
   return Math.max(0, Math.min(10, score))
 }
 
@@ -285,12 +292,11 @@ export function buildCategoryData(
       label: 'Decentralization',
       grades: grades.map(g => g.categories.decentralization),
       metrics: [
-        textRow('Client', v => getClientName(v.client_type), 'Minority clients benefit network health'),
-        textRow('Minority Client', v => isMinorityClient(v.client_type) ? 'Yes' : 'No', 'Non-majority client software -- Firedancer, Jito_BAM, Sig, etc.'),
-        textRow('DoubleZero', v => v.is_dz ? 'Yes' : 'No', 'DoubleZero network member -- contributes to network infrastructure'),
-        textRow('SFDP', v => v.is_sfdp ? 'Yes' : 'No', 'Solana Foundation Delegation Program member'),
-        textRow('Superminority', v => v.superminority ? 'Yes' : 'No', 'Not in superminority is better for decentralization'),
-        textRow('Location', v => [v.city, v.country].filter(Boolean).join(', ') || 'Unknown', 'Geographic location -- shown for context'),
+        textRow('Client', v => getClientName(v.client_type), 'Validator software -- minority clients help decentralization'),
+        textRow('Minority Client', v => isMinorityClient(v.client_type) ? 'Yes' : 'No', 'Non-majority client software (+2 bonus)'),
+        textRow('SFDP', v => v.is_sfdp ? 'Yes' : 'No', 'Solana Foundation Delegation Program member (+1 bonus)'),
+        textRow('Superminority', v => v.superminority ? 'Yes' : 'No', 'In superminority = -2 penalty'),
+        textRow('Location', v => [v.city, v.country].filter(Boolean).join(', ') || 'Unknown', 'Europe/NA = -1, Asia = 0, other = +1'),
       ],
     },
     {

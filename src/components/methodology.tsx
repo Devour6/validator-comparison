@@ -60,14 +60,14 @@ const CATEGORIES = [
   {
     name: 'Decentralization',
     weight: '10%',
-    description: 'Measures how much a validator contributes to network decentralization through software diversity, program participation, and infrastructure.',
+    description: 'Measures how much a validator contributes to network decentralization through software diversity, program participation, and geographic distribution.',
     metrics: [
       { name: 'Minority Client', scoring: 'Running a minority client (Firedancer, Jito_BAM, Sig, Frankendancer, etc.) adds +2 to the base score. Standard Agave and Jito-Solana are majority clients.' },
       { name: 'SFDP Membership', scoring: 'Solana Foundation Delegation Program participation adds +1. Indicates alignment with foundation decentralization goals.' },
-      { name: 'DoubleZero', scoring: 'DoubleZero network membership adds +1. DZ validators contribute to low-latency network infrastructure.' },
       { name: 'Superminority', scoring: 'Being in the superminority (top ~20 validators by stake) applies a -2 penalty. These validators already concentrate too much power.' },
+      { name: 'Geographic Diversity', scoring: 'Based on continent. Europe and North America (where most Solana stake lives) get -1. Asia gets 0. South America, Africa, and Oceania get +1 for being in underserved regions.' },
     ],
-    formula: 'Category Score = Base (5) + Client Bonus + SFDP + DZ + Superminority Penalty (clamped 0-10)',
+    formula: 'Category Score = Base (5) + Client Bonus + SFDP + Superminority Penalty + Geography (clamped 0-10)',
   },
   {
     name: 'Reliability',
