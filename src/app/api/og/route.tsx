@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   // Fetch all validators from Trillium
   let allValidators: ValidatorRaw[] = []
   try {
-    const res = await fetch(TRILLIUM_URL)
+    const res = await fetch(TRILLIUM_URL, { next: { revalidate: 300 } })
     if (res.ok) {
       allValidators = await res.json()
     }

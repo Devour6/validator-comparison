@@ -36,12 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+      <head />
       <body className={`${outfit.variable} font-sans antialiased`}>
         {children}
       </body>

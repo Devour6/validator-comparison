@@ -60,7 +60,7 @@ function scoreSkipRate(skipRate: number): number {
 }
 
 function scoreApy(apy: number, allValidators: ValidatorRaw[]): number {
-  // Percentile-based scoring —spreads validators across the full grade range
+  // Percentile-based scoring — spreads validators across the full grade range
   // based on where they rank against all other validators
   const apys = allValidators
     .map(v => num(v.average_delegator_compound_total_apy))
@@ -98,7 +98,7 @@ function scoreTxSuccess(rate: number): number {
 
 function scoreStakePoolDiversity(pools: Record<string, number> | undefined, allValidators: ValidatorRaw[]): number {
   const count = pools ? Object.values(pools).filter(x => x > 0).length : 0
-  // Percentile-based scoring —ranks pool diversity against all validators
+  // Percentile-based scoring — ranks pool diversity against all validators
   const counts = allValidators
     .map(v => v.stake_pools ? Object.values(v.stake_pools).filter(x => x > 0).length : 0)
     .sort((a, b) => a - b)
@@ -163,13 +163,13 @@ function isMinorityClient(clientType: string | number | undefined): boolean {
 
 function scoreDecentralization(v: ValidatorRaw): number {
   let score = 5
-  // Minority client bonus —running non-majority software helps the network
+  // Minority client bonus — running non-majority software helps the network
   if (isMinorityClient(v.client_type)) score += 2
   // SFDP membership
   if (v.is_sfdp) score += 1
   // Superminority penalty
   if (v.superminority) score -= 2
-  // Geographic diversity by continent —most stake is in Europe/NA
+  // Geographic diversity by continent — most stake is in Europe/NA
   const continent = (v.continent || '').toLowerCase()
   const country = (v.country || '').toLowerCase()
   if (continent === 'europe' || continent === 'north america' || country === 'united states' || country === 'germany' || country === 'netherlands') {
@@ -191,7 +191,7 @@ export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   const delegatorApy = num(v.average_delegator_compound_total_apy)
   const rewardsScore = scoreApy(delegatorApy, allValidators)
 
-  // Trust scored purely on pool diversity —raw stake amount doesn't indicate quality
+  // Trust scored purely on pool diversity — raw stake amount doesn't indicate quality
   const stakeScore = scoreStakePoolDiversity(v.stake_pools, allValidators)
 
   const comm = num(v.average_commission)
@@ -245,11 +245,11 @@ export function buildCategoryData(
       label: 'Performance',
       grades: grades.map(g => g.categories.performance),
       metrics: [
-        row('Skip Rate', v => num(v.avg_skip_rate), pct, true, 'Lower is better —% of leader slots missed'),
-        row('Epoch Credits', v => num(v.average_epoch_credits), v => fmtNum(v, 0), false, 'Higher is better —vote credits earned per epoch'),
-        row('Tx Success Rate', v => num(v.average_avg_tx_success_rate), pct, false, 'Higher is better —overall transaction success rate'),
-        row('User Tx Success', v => num(v.average_avg_user_tx_success_rate), pct, false, 'Higher is better —non-vote transaction success rate'),
-        row('Build Time Score', v => num(v.average_build_time_score), v => fmtNum(v, 1), false, 'Higher is better —block build efficiency score'),
+        row('Skip Rate', v => num(v.avg_skip_rate), pct, true, 'Lower is better — % of leader slots missed'),
+        row('Epoch Credits', v => num(v.average_epoch_credits), v => fmtNum(v, 0), false, 'Higher is better — vote credits earned per epoch'),
+        row('Tx Success Rate', v => num(v.average_avg_tx_success_rate), pct, false, 'Higher is better — overall transaction success rate'),
+        row('User Tx Success', v => num(v.average_avg_user_tx_success_rate), pct, false, 'Higher is better — non-vote transaction success rate'),
+        row('Build Time Score', v => num(v.average_build_time_score), v => fmtNum(v, 1), false, 'Higher is better — block build efficiency score'),
       ],
     },
     {
@@ -269,7 +269,7 @@ export function buildCategoryData(
       label: 'Trust',
       grades: grades.map(g => g.categories.stake),
       metrics: [
-        row('Stake Pools', v => v.stake_pools ? Object.values(v.stake_pools).filter(x => x > 0).length : 0, v => fmtNum(v, 0), false, 'Number of independent pools delegating —scored by percentile rank'),
+        row('Stake Pools', v => v.stake_pools ? Object.values(v.stake_pools).filter(x => x > 0).length : 0, v => fmtNum(v, 0), false, 'Number of independent pools delegating — scored by percentile rank'),
         row('Pool Stake', v => num(v.total_from_stake_pools), fmtSol, false, 'Stake from pools (Jito, Marinade, etc.)'),
         row('Native Stake', v => num(v.total_not_from_stake_pools), fmtSol, false, 'Direct delegator stake (non-pool)'),
         row('Activated Stake', v => num(v.average_activated_stake), fmtSol, false, 'Total active stake (shown for context, not scored)'),
@@ -280,7 +280,7 @@ export function buildCategoryData(
       label: 'Commission',
       grades: grades.map(g => g.categories.commission),
       metrics: [
-        row('Commission', v => num(v.average_commission), pct, true, 'Lower is better —validator commission on rewards'),
+        row('Commission', v => num(v.average_commission), pct, true, 'Lower is better — validator commission on rewards'),
       ],
     },
     {
@@ -288,7 +288,7 @@ export function buildCategoryData(
       label: 'Decentralization',
       grades: grades.map(g => g.categories.decentralization),
       metrics: [
-        textRow('Client', v => getClientName(v.client_type), 'Validator software —minority clients help decentralization'),
+        textRow('Client', v => getClientName(v.client_type), 'Validator software — minority clients help decentralization'),
         textRow('Minority Client', v => isMinorityClient(v.client_type) ? 'Yes' : 'No', 'Non-majority client software (+2 bonus)'),
         textRow('SFDP', v => v.is_sfdp ? 'Yes' : 'No', 'Solana Foundation Delegation Program member (+1 bonus)'),
         textRow('Superminority', v => v.superminority ? 'Yes' : 'No', 'In superminority = -2 penalty'),
@@ -300,10 +300,10 @@ export function buildCategoryData(
       label: 'Reliability',
       grades: grades.map(g => g.categories.reliability),
       metrics: [
-        row('IBRL Score', v => num(v.average_ibrl_score), v => fmtNum(v, 1), false, 'Higher is better —inclusivity/build reliability score'),
-        row('Vote Packing', v => num(v.average_vote_packing_score), v => fmtNum(v, 1), false, 'Higher is better —vote transaction packing efficiency'),
-        row('Vote Latency', v => num(v.average_mean_vote_latency), v => fmtNum(v, 3) + ' slots', true, 'Lower is better —mean vote latency in slots'),
-        row('JIP-25 Rank', v => num(v.jip25_rank), v => v > 0 ? '#' + fmtNum(v, 0) : 'N/A', true, 'Lower rank is better —Jito StakeNet eligibility'),
+        row('IBRL Score', v => num(v.average_ibrl_score), v => fmtNum(v, 1), false, 'Higher is better — inclusivity/build reliability score'),
+        row('Vote Packing', v => num(v.average_vote_packing_score), v => fmtNum(v, 1), false, 'Higher is better — vote transaction packing efficiency'),
+        row('Vote Latency', v => num(v.average_mean_vote_latency), v => fmtNum(v, 3) + ' slots', true, 'Lower is better — mean vote latency in slots'),
+        row('JIP-25 Rank', v => num(v.jip25_rank), v => v > 0 ? '#' + fmtNum(v, 0) : 'N/A', true, 'Lower rank is better — Jito StakeNet eligibility'),
       ],
     },
   ]

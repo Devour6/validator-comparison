@@ -38,7 +38,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   return {
     title,
-    description: 'Compare Solana validators side-by-side -- performance, APY, decentralization, and more.',
+    description: 'Compare Solana validators side-by-side — performance, APY, decentralization, and more.',
     openGraph: {
       title,
       description: 'Compare Solana validators side-by-side with Phase.',

@@ -66,7 +66,7 @@ export function ComparePageClient({ initialPubkeys }: Props) {
             </div>
             <Link
               href="/"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg border border-border hover:border-foreground/30"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-lg border border-border hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               New Comparison
             </Link>
@@ -96,7 +96,7 @@ export function ComparePageClient({ initialPubkeys }: Props) {
               <p className="text-xs text-muted-foreground">
                 Comparing {resolvedValidators.length} validator{resolvedValidators.length > 1 ? 's' : ''} — 10-epoch weighted averages
               </p>
-              <ShareButton pubkeys={initialPubkeys} />
+              <ShareButton pubkeys={initialPubkeys} names={resolvedValidators.map(v => v.name || 'Unknown')} />
             </div>
             <ComparisonView
               validators={resolvedValidators}

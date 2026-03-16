@@ -83,7 +83,7 @@ export function ComparisonView({ validators, allValidators }: ComparisonViewProp
                         <div className="flex justify-end pr-1">
                           <span
                             className="text-xs font-semibold tabular-nums"
-                            style={{ color: isBest ? '#22c55e' : VALIDATOR_COLORS[i] }}
+                            style={{ color: isBest ? 'var(--chart-1)' : VALIDATOR_COLORS[i] }}
                           >
                             {g.score.toFixed(1)}
                           </span>
@@ -93,7 +93,7 @@ export function ComparisonView({ validators, allValidators }: ComparisonViewProp
                             className="h-full rounded-full transition-all duration-500"
                             style={{
                               width: `${(g.score / 10) * 100}%`,
-                              backgroundColor: isBest ? '#22c55e' : VALIDATOR_COLORS[i] + '80',
+                              backgroundColor: isBest ? 'var(--chart-1)' : VALIDATOR_COLORS[i] + '80',
                             }}
                           />
                         </div>
@@ -146,7 +146,7 @@ export function ComparisonView({ validators, allValidators }: ComparisonViewProp
                         key={i}
                         className="text-sm text-right font-mono tabular-nums"
                         style={{
-                          color: metric.bestIdx === i ? '#22c55e' : 'inherit',
+                          color: metric.bestIdx === i ? 'var(--chart-1)' : 'inherit',
                           fontWeight: metric.bestIdx === i ? 600 : 400,
                         }}
                       >
