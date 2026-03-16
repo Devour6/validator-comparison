@@ -79,14 +79,16 @@ export function ValidatorSearch({ validators, selected, onSelect, onRemove, plac
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => onSelect(null)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-secondary"
+              aria-label="Change selected validator"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               Change
             </button>
             {onRemove && (
               <button
                 onClick={onRemove}
-                className="text-sm text-muted-foreground hover:text-red-400 transition-colors px-2 py-1 rounded hover:bg-red-500/10"
+                aria-label="Remove this validator"
+                className="text-sm text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
                 Remove
               </button>
@@ -104,7 +106,8 @@ export function ValidatorSearch({ validators, selected, onSelect, onRemove, plac
         {onRemove && (
           <button
             onClick={onRemove}
-            className="text-xs text-muted-foreground hover:text-red-400 transition-colors"
+            aria-label="Remove this validator slot"
+            className="text-xs text-muted-foreground hover:text-destructive transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none rounded"
           >
             Remove slot
           </button>
@@ -124,7 +127,7 @@ export function ValidatorSearch({ validators, selected, onSelect, onRemove, plac
         className="bg-surface border-border text-foreground placeholder:text-muted-foreground"
       />
       {open && filtered.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg border border-border bg-[#1a1916] shadow-xl max-h-64 overflow-y-auto">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg border border-border bg-card shadow-xl max-h-64 overflow-y-auto">
           {filtered.map((v, i) => (
             <button
               key={v.vote_account_pubkey}
@@ -152,7 +155,7 @@ export function ValidatorSearch({ validators, selected, onSelect, onRemove, plac
         </div>
       )}
       {open && query.length >= 1 && filtered.length === 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg border border-border bg-[#1a1916] shadow-xl p-4 text-sm text-muted-foreground text-center">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg border border-border bg-card shadow-xl p-4 text-sm text-muted-foreground text-center">
           No validators found
         </div>
       )}

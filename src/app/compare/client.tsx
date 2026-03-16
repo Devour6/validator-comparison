@@ -49,14 +49,14 @@ export function ComparePageClient({ initialPubkeys }: Props) {
   }, [allValidators, initialPubkeys, networkAvg])
 
   return (
-    <div className="min-h-screen bg-[#0F0E0C]">
+    <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Image src="/logo.png" alt="Phase" width={40} height={40} className="rounded-lg" />
               <div>
-                <h1 className="font-display text-2xl md:text-3xl text-[#F3EED9]">
+                <h1 className="font-display text-2xl md:text-3xl text-foreground">
                   Validator Comparison
                 </h1>
                 <p className="text-muted-foreground mt-0.5">
@@ -78,14 +78,14 @@ export function ComparePageClient({ initialPubkeys }: Props) {
         {loading && (
           <div className="flex items-center justify-center py-20">
             <div className="space-y-3 text-center">
-              <div className="w-8 h-8 border-2 border-[#F3EED9] border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="w-8 h-8 border-2 border-foreground border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-muted-foreground">Loading validators...</p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-red-400">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
             {error}
           </div>
         )}
@@ -94,7 +94,7 @@ export function ComparePageClient({ initialPubkeys }: Props) {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                Comparing {resolvedValidators.length} validator{resolvedValidators.length > 1 ? 's' : ''} -- 10-epoch weighted averages
+                Comparing {resolvedValidators.length} validator{resolvedValidators.length > 1 ? 's' : ''} — 10-epoch weighted averages
               </p>
               <ShareButton pubkeys={initialPubkeys} />
             </div>
@@ -112,7 +112,7 @@ export function ComparePageClient({ initialPubkeys }: Props) {
             </p>
             <Link
               href="/"
-              className="inline-block text-sm text-[#F3EED9] hover:underline"
+              className="inline-block text-sm text-foreground hover:underline"
             >
               Start a new comparison
             </Link>

@@ -12,11 +12,13 @@ import type { ValidatorRaw } from '@/lib/types'
 
 const MAX_VALIDATORS = 4
 
+let nextSlotId = 1
+
 export default function Home() {
   const [validators, setValidators] = useState<ValidatorRaw[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selected, setSelected] = useState<(ValidatorRaw | null)[]>([null])
+  const [selected, setSelected] = useState<{ id: number; validator: ValidatorRaw | null }[]>([{ id: nextSlotId++, validator: null }])
 
   useEffect(() => {
     async function fetchData() {
@@ -35,20 +37,19 @@ export default function Home() {
     fetchData()
   }, [])
 
-  const handleSelect = useCallback((index: number, v: ValidatorRaw | null) => {
+  const handleSelect = useCallback((slotId: number, v: ValidatorRaw | null) => {
     setSelected(prev => {
-      const next: (ValidatorRaw | null)[] = [...prev]
       if (v === null) {
         // Remove this slot
-        next.splice(index, 1)
-        if (next.length === 0) next.push(null)
+        const next = prev.filter(s => s.id !== slotId)
+        if (next.length === 0) next.push({ id: nextSlotId++, validator: null })
         return next
       }
-      next[index] = v
+      const next = prev.map(s => s.id === slotId ? { ...s, validator: v } : s)
       // Auto-add a new empty slot if all slots are filled and under max
-      const allFilled = !next.some(x => x === null)
+      const allFilled = !next.some(s => s.validator === null)
       if (allFilled && next.length < MAX_VALIDATORS) {
-        return [...next, null] as (ValidatorRaw | null)[]
+        return [...next, { id: nextSlotId++, validator: null }]
       }
       return next
     })
@@ -57,7 +58,7 @@ export default function Home() {
   const addSlot = useCallback(() => {
     setSelected(prev => {
       if (prev.length >= MAX_VALIDATORS) return prev
-      return [...prev, null]
+      return [...prev, { id: nextSlotId++, validator: null }]
     })
   }, [])
 
@@ -67,41 +68,40 @@ export default function Home() {
     if (!networkAvg) return
     setSelected(prev => {
       // Don't add if already present
-      if (prev.some(v => v?.vote_account_pubkey === NETWORK_AVERAGE_PUBKEY)) return prev
+      if (prev.some(s => s.validator?.vote_account_pubkey === NETWORK_AVERAGE_PUBKEY)) return prev
       // Find first empty slot or add one
-      const emptyIdx = prev.findIndex(v => v === null)
+      const emptyIdx = prev.findIndex(s => s.validator === null)
       if (emptyIdx >= 0) {
-        const next = [...prev]
-        next[emptyIdx] = networkAvg
-        const allFilled = !next.some(x => x === null)
-        if (allFilled && next.length < MAX_VALIDATORS) return [...next, null] as (ValidatorRaw | null)[]
+        const next = prev.map((s, i) => i === emptyIdx ? { ...s, validator: networkAvg } : s)
+        const allFilled = !next.some(s => s.validator === null)
+        if (allFilled && next.length < MAX_VALIDATORS) return [...next, { id: nextSlotId++, validator: null }]
         return next
       }
       if (prev.length < MAX_VALIDATORS) {
-        const next = [...prev, networkAvg]
-        if (next.length < MAX_VALIDATORS) return [...next, null] as (ValidatorRaw | null)[]
+        const next = [...prev, { id: nextSlotId++, validator: networkAvg }]
+        if (next.length < MAX_VALIDATORS) return [...next, { id: nextSlotId++, validator: null }]
         return next
       }
       return prev
     })
   }, [networkAvg])
 
-  const activeValidators = selected.filter((v): v is ValidatorRaw => v !== null)
+  const activeValidators = selected.filter((s): s is { id: number; validator: ValidatorRaw } => s.validator !== null).map(s => s.validator)
   const selectedPubkeys = new Set(activeValidators.map(v => v.vote_account_pubkey))
   const hasNetworkAvg = selectedPubkeys.has(NETWORK_AVERAGE_PUBKEY)
 
   return (
-    <div className="min-h-screen bg-[#0F0E0C]">
+    <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="max-w-5xl mx-auto px-4 py-6">
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="Phase" width={40} height={40} className="rounded-lg" />
             <div>
-              <h1 className="font-display text-2xl md:text-3xl text-[#F3EED9]">
+              <h1 className="font-display text-2xl md:text-3xl text-foreground">
                 Validator Comparison
               </h1>
               <p className="text-muted-foreground mt-0.5">
-                Compare Solana validators side-by-side -- performance, APY, decentralization, and more.
+                Compare Solana validators side-by-side — performance, APY, decentralization, and more.
               </p>
             </div>
           </div>
@@ -119,14 +119,14 @@ export default function Home() {
             {loading && (
               <div className="flex items-center justify-center py-20">
                 <div className="space-y-3 text-center">
-                  <div className="w-8 h-8 border-2 border-[#F3EED9] border-t-transparent rounded-full animate-spin mx-auto" />
+                  <div className="w-8 h-8 border-2 border-foreground border-t-transparent rounded-full animate-spin mx-auto" />
                   <p className="text-muted-foreground">Loading validators from Trillium...</p>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-red-400">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
                 {error}
               </div>
             )}
@@ -135,13 +135,13 @@ export default function Home() {
               <div className="space-y-8">
                 {/* Search Slots */}
                 <div className={`grid grid-cols-1 ${selected.length >= 2 ? 'md:grid-cols-2' : ''} gap-4`}>
-                  {selected.map((v, i) => (
+                  {selected.map((slot, i) => (
                     <ValidatorSearch
-                      key={i}
-                      validators={validators.filter(val => !selectedPubkeys.has(val.vote_account_pubkey) || val.vote_account_pubkey === v?.vote_account_pubkey)}
-                      selected={v}
-                      onSelect={(val) => handleSelect(i, val)}
-                      onRemove={selected.length > 1 ? () => handleSelect(i, null) : undefined}
+                      key={slot.id}
+                      validators={validators.filter(val => !selectedPubkeys.has(val.vote_account_pubkey) || val.vote_account_pubkey === slot.validator?.vote_account_pubkey)}
+                      selected={slot.validator}
+                      onSelect={(val) => handleSelect(slot.id, val)}
+                      onRemove={selected.length > 1 ? () => handleSelect(slot.id, null) : undefined}
                       placeholder="Search by name or pubkey..."
                       label={`Validator ${i + 1}`}
                     />
@@ -151,20 +151,22 @@ export default function Home() {
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3">
                   {activeValidators.length > 0 && (
-                    <ShareButton pubkeys={activeValidators.map(v => v.vote_account_pubkey)} />
+                    <ShareButton pubkeys={activeValidators.map(v => v.vote_account_pubkey)} names={activeValidators.map(v => v.name || 'Unknown')} />
                   )}
                   {!hasNetworkAvg && networkAvg && (
                     <button
                       onClick={addNetworkAverage}
-                      className="px-4 py-2.5 rounded-lg border border-border bg-surface text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                      aria-label="Compare to network average"
+                      className="px-4 py-2.5 rounded-lg border border-border bg-surface text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                       + Compare to Network Average
                     </button>
                   )}
-                  {selected.length < MAX_VALIDATORS && selected.every(v => v !== null) && (
+                  {selected.length < MAX_VALIDATORS && selected.every(s => s.validator !== null) && (
                     <button
                       onClick={addSlot}
-                      className="px-4 py-2.5 rounded-lg border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                      aria-label="Add another validator slot"
+                      className="px-4 py-2.5 rounded-lg border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                       + Add another validator (up to {MAX_VALIDATORS})
                     </button>
@@ -172,7 +174,7 @@ export default function Home() {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  {validators.length.toLocaleString()} validators loaded -- 10-epoch weighted averages
+                  {validators.length.toLocaleString()} validators loaded — 10-epoch weighted averages
                 </p>
 
                 {/* Comparison */}

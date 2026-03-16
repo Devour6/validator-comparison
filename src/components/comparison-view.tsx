@@ -52,7 +52,7 @@ export function ComparisonView({ validators, allValidators }: ComparisonViewProp
                   {g.validator.name || 'Unknown'}
                 </p>
                 {bestOverallIdx === i && validators.length > 1 && (
-                  <span className="text-xs font-medium text-green-400 border border-green-500/30 rounded px-2 py-0.5">
+                  <span className="text-xs font-medium text-chart-1 border border-chart-1/30 rounded px-2 py-0.5">
                     Best Overall
                   </span>
                 )}

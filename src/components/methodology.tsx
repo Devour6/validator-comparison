@@ -2,13 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
 const GRADE_SCALE = [
-  { range: '9.0 - 10.0', label: 'S', color: '#22c55e', meaning: 'Exceptional -- top-tier across the board' },
-  { range: '8.0 - 8.9', label: 'A', color: '#4ade80', meaning: 'Excellent -- well above average' },
-  { range: '7.0 - 7.9', label: 'B+', color: '#a3e635', meaning: 'Very Good -- above average in most areas' },
-  { range: '6.0 - 6.9', label: 'B', color: '#facc15', meaning: 'Good -- solid performance, some room to improve' },
-  { range: '5.0 - 5.9', label: 'C', color: '#fb923c', meaning: 'Average -- meets baseline expectations' },
-  { range: '4.0 - 4.9', label: 'D', color: '#f87171', meaning: 'Below Average -- notable weaknesses' },
-  { range: '0.0 - 3.9', label: 'F', color: '#ef4444', meaning: 'Poor -- significant issues across metrics' },
+  { range: '9.0 - 10.0', label: 'S', color: '#22c55e', meaning: 'Exceptional —top-tier across the board' },
+  { range: '8.0 - 8.9', label: 'A', color: '#4ade80', meaning: 'Excellent —well above average' },
+  { range: '7.0 - 7.9', label: 'B+', color: '#a3e635', meaning: 'Very Good —above average in most areas' },
+  { range: '6.0 - 6.9', label: 'B', color: '#facc15', meaning: 'Good —solid performance, some room to improve' },
+  { range: '5.0 - 5.9', label: 'C', color: '#fb923c', meaning: 'Average —meets baseline expectations' },
+  { range: '4.0 - 4.9', label: 'D', color: '#f87171', meaning: 'Below Average —notable weaknesses' },
+  { range: '0.0 - 3.9', label: 'F', color: '#ef4444', meaning: 'Poor —significant issues across metrics' },
 ]
 
 const CATEGORIES = [
@@ -21,14 +21,14 @@ const CATEGORIES = [
       { name: 'Tx Success Rate', scoring: 'Scored on a 4-10 scale based on overall transaction success percentage. 95%+ = 10, 90%+ = 9, down to below 60% = 4.' },
       { name: 'Epoch Credits', scoring: 'Scored based on vote credits earned per epoch. 450K+ = 10, 440K+ = 9, 430K+ = 8, down to below 350K = 3. Higher credits indicate consistent, timely voting.' },
       { name: 'Build Time Score', scoring: 'Scored on a 3-10 scale based on block build efficiency (0-100). 99.5+ = 10, 99+ = 9, 98+ = 8, 96+ = 7, 93+ = 6, 90+ = 5. Measures how efficiently the validator constructs blocks during leader slots.' },
-      { name: 'User Tx Success', scoring: 'Shown for comparison. Non-vote transaction success rate -- indicates how reliably user transactions land.' },
+      { name: 'User Tx Success', scoring: 'Shown for comparison. Non-vote transaction success rate —indicates how reliably user transactions land.' },
     ],
     formula: 'Category Score = (Skip Rate + Tx Success + Epoch Credits + Build Time) / 4',
   },
   {
     name: 'APY & Rewards',
     weight: '20%',
-    description: 'Evaluates the returns a delegator can expect. Uses percentile-based scoring -- validators are ranked against all other validators, so even small APY differences produce meaningful grade separation.',
+    description: 'Evaluates the returns a delegator can expect. Uses percentile-based scoring —validators are ranked against all other validators, so even small APY differences produce meaningful grade separation.',
     metrics: [
       { name: 'Delegator APY', scoring: 'Primary metric. Scored by percentile rank among all validators (3-10 scale). A validator at the 90th percentile scores ~9.3 (S), 70th percentile ~7.9 (B+), 50th percentile ~6.5 (B). This ensures realistic grade spread even when APYs cluster tightly.' },
       { name: 'Overall APY', scoring: 'Shown for comparison. The full compound APY before validator/delegator split.' },
@@ -41,10 +41,10 @@ const CATEGORIES = [
   {
     name: 'Trust',
     weight: '10%',
-    description: 'Measures institutional trust through stake pool diversity, scored by percentile rank. Raw stake amount is intentionally excluded -- high stake does not indicate a quality validator. What matters is how many independent stake pools have chosen to delegate.',
+    description: 'Measures institutional trust through stake pool diversity, scored by percentile rank. Raw stake amount is intentionally excluded —high stake does not indicate a quality validator. What matters is how many independent stake pools have chosen to delegate.',
     metrics: [
-      { name: 'Stake Pool Diversity', scoring: 'Scored by percentile rank among all validators (3-10 scale, rounded to 0.5). A validator trusted by more pools ranks higher. This ensures realistic grade spread -- most validators cluster in the middle rather than all scoring 10.' },
-      { name: 'Pool Stake / Native Stake / Activated Stake', scoring: 'Shown for context only -- not factored into the grade.' },
+      { name: 'Stake Pool Diversity', scoring: 'Scored by percentile rank among all validators (3-10 scale, rounded to 0.5). A validator trusted by more pools ranks higher. This ensures realistic grade spread —most validators cluster in the middle rather than all scoring 10.' },
+      { name: 'Pool Stake / Native Stake / Activated Stake', scoring: 'Shown for context only —not factored into the grade.' },
     ],
     formula: 'Category Score = Pool Diversity Percentile Score (3-10 range)',
   },
@@ -101,7 +101,7 @@ export function Methodology() {
           </p>
           <div>
             <p className="font-semibold mb-2">Overall Score Formula:</p>
-            <div className="bg-[#0F0E0C] rounded-lg p-3 font-mono text-xs leading-relaxed border border-border">
+            <div className="bg-background rounded-lg p-3 font-mono text-xs leading-relaxed border border-border">
               Overall = Performance (25%) + APY & Rewards (20%) + Reliability (20%)<br />
               &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Commission (15%) + Trust (10%) + Decentralization (10%)
             </div>
@@ -157,7 +157,7 @@ export function Methodology() {
               ))}
             </div>
 
-            <div className="bg-[#0F0E0C] rounded-lg p-3 font-mono text-xs border border-border">
+            <div className="bg-background rounded-lg p-3 font-mono text-xs border border-border">
               {cat.formula}
             </div>
           </CardContent>
@@ -171,7 +171,7 @@ export function Methodology() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p>
-            All data comes from the <span className="font-semibold">Trillium API</span> -- specifically
+            All data comes from the <span className="font-semibold">Trillium API</span> —specifically
             the recency-weighted 10-epoch average endpoint. This weights recent epochs more heavily,
             so a validator&apos;s current performance matters more than older data.
           </p>

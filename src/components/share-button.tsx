@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 
 interface ShareButtonProps {
   pubkeys: string[]
+  names?: string[]
 }
 
 function buildCompareUrl(pubkeys: string[]): string {
@@ -21,7 +22,7 @@ function buildOgUrl(pubkeys: string[]): string {
   return `/api/og?${params.toString()}`
 }
 
-export function ShareButton({ pubkeys }: ShareButtonProps) {
+export function ShareButton({ pubkeys, names }: ShareButtonProps) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [downloading, setDownloading] = useState(false)
@@ -46,15 +47,7 @@ export function ShareButton({ pubkeys }: ShareButtonProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // Fallback for older browsers
-      const input = document.createElement('input')
-      input.value = compareUrl
-      document.body.appendChild(input)
-      input.select()
-      document.execCommand('copy')
-      document.body.removeChild(input)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      // Clipboard API unavailable (e.g. non-HTTPS context)
     }
   }
 
@@ -75,7 +68,9 @@ export function ShareButton({ pubkeys }: ShareButtonProps) {
   }
 
   function handleTwitter() {
-    const text = 'Check out this Solana validator comparison'
+    const text = names && names.length > 0
+      ? `Compare ${names.join(' vs ')} on @phase_labs`
+      : 'Check out this Solana validator comparison'
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(compareUrl)}`
     window.open(twitterUrl, '_blank')
   }
@@ -84,7 +79,8 @@ export function ShareButton({ pubkeys }: ShareButtonProps) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="px-4 py-2.5 rounded-lg border border-[#F3EED9]/20 bg-[#F3EED9]/5 text-sm text-[#F3EED9] hover:bg-[#F3EED9]/10 hover:border-[#F3EED9]/30 transition-colors flex items-center gap-2"
+        aria-label="Share this comparison"
+        className="px-4 py-2.5 rounded-lg border border-foreground/20 bg-foreground/5 text-sm text-foreground hover:bg-foreground/10 hover:border-foreground/30 transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
@@ -93,17 +89,17 @@ export function ShareButton({ pubkeys }: ShareButtonProps) {
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 z-50 rounded-lg border border-border bg-[#1a1916] shadow-xl overflow-hidden min-w-[200px]">
+        <div className="absolute top-full left-0 mt-2 z-50 rounded-lg border border-border bg-card shadow-xl overflow-hidden min-w-[200px]">
           <button
             onClick={handleCopyLink}
             className="w-full text-left px-4 py-3 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors flex items-center gap-3"
           >
             {copied ? (
               <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                <span className="text-[#22c55e]">Copied!</span>
+                <span className="text-chart-1">Copied!</span>
               </>
             ) : (
               <>

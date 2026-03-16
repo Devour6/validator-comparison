@@ -13,16 +13,23 @@ const CATEGORIES = [
   { key: 'stake', label: 'Trust' },
 ]
 
-async function loadFont(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url)
-  return res.arrayBuffer()
+async function loadFont(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    return res.arrayBuffer()
+  } catch {
+    return null
+  }
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
+  const PUBKEY_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
   const pubkeys = searchParams.getAll('v').slice(0, 4)
+    .filter(pk => pk === NETWORK_AVERAGE_PUBKEY || PUBKEY_RE.test(pk))
 
-  // Fetch fonts in parallel
+  // Fetch fonts in parallel — graceful fallback if Google Fonts unreachable
   const [audiowide, outfit] = await Promise.all([
     loadFont('https://fonts.gstatic.com/s/audiowide/v22/l7gdbjpo0cum0ckerWCtkQ.ttf'),
     loadFont('https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4E.ttf'),
@@ -328,8 +335,8 @@ export async function GET(request: Request) {
     width: 1200,
     height: 630,
     fonts: [
-      { name: 'Audiowide', data: audiowide, weight: 400 as const, style: 'normal' as const },
-      { name: 'Outfit', data: outfit, weight: 400 as const, style: 'normal' as const },
+      ...(audiowide ? [{ name: 'Audiowide', data: audiowide, weight: 400 as const, style: 'normal' as const }] : []),
+      ...(outfit ? [{ name: 'Outfit', data: outfit, weight: 400 as const, style: 'normal' as const }] : []),
     ],
     headers: {
       'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
