@@ -112,7 +112,7 @@ export function ComparePageClient({ initialPubkeys }: Props) {
             </p>
             <Link
               href="/"
-              className="inline-block text-sm text-foreground hover:underline"
+              className="inline-block text-sm text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none rounded"
             >
               Start a new comparison
             </Link>
