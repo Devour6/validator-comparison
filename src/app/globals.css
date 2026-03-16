@@ -9,7 +9,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('https://fonts.gstatic.com/s/audiowide/v20/l7gdbjpo0cum0ckerWCtkQXPExpQnw.woff2') format('woff2');
+  src: url('https://fonts.gstatic.com/s/audiowide/v22/l7gdbjpo0cum0ckerWCdlg_OMRlABg.woff2') format('woff2');
 }
 
 @theme inline {
@@ -113,19 +113,3 @@
   background: rgba(243, 238, 217, 0.05);
 }
 
-.winner-glow {
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-.grade-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1.125rem;
-  border: 2px solid;
-}

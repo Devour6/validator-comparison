@@ -19,10 +19,11 @@ function pct(v: number): string {
   return v.toFixed(2) + '%'
 }
 
-function fmtSol(v: number): string {
-  if (v >= 1_000_000) return (v / 1_000_000).toFixed(2) + 'M SOL'
-  if (v >= 1_000) return (v / 1_000).toFixed(1) + 'K SOL'
-  return v.toFixed(0) + ' SOL'
+export function fmtSol(v: number | undefined | null): string {
+  const n = v ?? 0
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M SOL'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K SOL'
+  return n.toFixed(0) + ' SOL'
 }
 
 function fmtNum(v: number, decimals = 2): string {
@@ -94,22 +95,17 @@ function scoreTxSuccess(rate: number): number {
   return 4
 }
 
-function scoreStake(stake: number, allValidators: ValidatorRaw[]): number {
-  const sorted = allValidators.map(v => num(v.average_activated_stake)).sort((a, b) => a - b)
-  const idx = sorted.findIndex(s => s >= stake)
-  const percentile = (idx >= 0 ? idx : sorted.length) / sorted.length
-  return Math.min(10, 3 + percentile * 7)
-}
 
-function scoreStakePoolDiversity(pools: Record<string, number> | undefined): number {
-  if (!pools) return 3
-  const entries = Object.entries(pools).filter(([, v]) => v > 0)
-  if (entries.length >= 5) return 10
-  if (entries.length >= 4) return 9
-  if (entries.length >= 3) return 8
-  if (entries.length >= 2) return 7
-  if (entries.length >= 1) return 5
-  return 3
+function scoreStakePoolDiversity(pools: Record<string, number> | undefined, allValidators: ValidatorRaw[]): number {
+  const count = pools ? Object.values(pools).filter(x => x > 0).length : 0
+  // Percentile-based scoring -- ranks pool diversity against all validators
+  const counts = allValidators
+    .map(v => v.stake_pools ? Object.values(v.stake_pools).filter(x => x > 0).length : 0)
+    .sort((a, b) => a - b)
+  if (counts.length === 0) return 5
+  const idx = counts.findIndex(c => c >= count)
+  const percentile = (idx >= 0 ? idx : counts.length) / counts.length
+  return Math.round((3 + percentile * 7) * 2) / 2
 }
 
 function scoreEpochCredits(credits: number): number {
@@ -196,7 +192,7 @@ export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   const rewardsScore = scoreApy(delegatorApy, allValidators)
 
   // Trust scored purely on pool diversity -- raw stake amount doesn't indicate quality
-  const stakeScore = scoreStakePoolDiversity(v.stake_pools)
+  const stakeScore = scoreStakePoolDiversity(v.stake_pools, allValidators)
 
   const comm = num(v.average_commission)
   const commScore = scoreCommission(comm)
@@ -270,13 +266,13 @@ export function buildCategoryData(
     },
     {
       key: 'stake',
-      label: 'Stake & Trust',
+      label: 'Trust',
       grades: grades.map(g => g.categories.stake),
       metrics: [
-        row('Activated Stake', v => num(v.average_activated_stake), fmtSol, false, 'Total active stake delegated to validator'),
+        row('Stake Pools', v => v.stake_pools ? Object.values(v.stake_pools).filter(x => x > 0).length : 0, v => fmtNum(v, 0), false, 'Number of independent pools delegating -- scored by percentile rank'),
         row('Pool Stake', v => num(v.total_from_stake_pools), fmtSol, false, 'Stake from pools (Jito, Marinade, etc.)'),
         row('Native Stake', v => num(v.total_not_from_stake_pools), fmtSol, false, 'Direct delegator stake (non-pool)'),
-        row('Stake Pools', v => v.stake_pools ? Object.values(v.stake_pools).filter(x => x > 0).length : 0, v => fmtNum(v, 0), false, 'Number of pools delegating to this validator'),
+        row('Activated Stake', v => num(v.average_activated_stake), fmtSol, false, 'Total active stake (shown for context, not scored)'),
       ],
     },
     {

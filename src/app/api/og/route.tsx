@@ -10,7 +10,7 @@ const CATEGORIES = [
   { key: 'reliability', label: 'Reliability' },
   { key: 'commission', label: 'Commission' },
   { key: 'decentralization', label: 'Decentralization' },
-  { key: 'stake', label: 'Stake & Trust' },
+  { key: 'stake', label: 'Trust' },
 ]
 
 async function loadFont(url: string): Promise<ArrayBuffer> {

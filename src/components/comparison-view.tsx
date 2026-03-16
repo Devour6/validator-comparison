@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { GradeBadge } from '@/components/grade-badge'
-import { gradeValidator, buildCategoryData, getClientName, NETWORK_AVERAGE_PUBKEY, VALIDATOR_COLORS } from '@/lib/grading'
+import { gradeValidator, buildCategoryData, getClientName, fmtSol, NETWORK_AVERAGE_PUBKEY, VALIDATOR_COLORS } from '@/lib/grading'
 import type { ValidatorRaw } from '@/lib/types'
 
 interface ComparisonViewProps {
@@ -68,38 +68,42 @@ export function ComparisonView({ validators, allValidators }: ComparisonViewProp
           <CardTitle className="font-display text-lg">Category Breakdown</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {categories.map(cat => (
-            <div key={cat.key} className="space-y-1.5">
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                {cat.label}
-              </span>
-              <div className="flex gap-1">
-                {cat.grades.map((g, i) => (
-                  <div key={i} className="flex-1 space-y-1">
-                    <div className="flex justify-end pr-1">
-                      <span
-                        className="text-xs font-semibold tabular-nums"
-                        style={{ color: g.score === Math.max(...cat.grades.map(x => x.score)) && validators.length > 1 ? '#22c55e' : VALIDATOR_COLORS[i] }}
-                      >
-                        {g.score.toFixed(1)}
-                      </span>
-                    </div>
-                    <div className="rounded-full bg-secondary overflow-hidden h-2">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${(g.score / 10) * 100}%`,
-                          backgroundColor: g.score === Math.max(...cat.grades.map(x => x.score)) && validators.length > 1
-                            ? '#22c55e'
-                            : VALIDATOR_COLORS[i] + '80',
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
+          {categories.map(cat => {
+            const maxScore = Math.max(...cat.grades.map(x => x.score))
+            return (
+              <div key={cat.key} className="space-y-1.5">
+                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  {cat.label}
+                </span>
+                <div className="flex gap-1">
+                  {cat.grades.map((g, i) => {
+                    const isBest = g.score === maxScore && validators.length > 1
+                    return (
+                      <div key={i} className="flex-1 space-y-1">
+                        <div className="flex justify-end pr-1">
+                          <span
+                            className="text-xs font-semibold tabular-nums"
+                            style={{ color: isBest ? '#22c55e' : VALIDATOR_COLORS[i] }}
+                          >
+                            {g.score.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="rounded-full bg-secondary overflow-hidden h-2">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${(g.score / 10) * 100}%`,
+                              backgroundColor: isBest ? '#22c55e' : VALIDATOR_COLORS[i] + '80',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </CardContent>
       </Card>
 
@@ -219,9 +223,3 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function fmtSol(v: number | undefined | null): string {
-  const n = v ?? 0
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M SOL'
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K SOL'
-  return n.toFixed(0) + ' SOL'
-}
