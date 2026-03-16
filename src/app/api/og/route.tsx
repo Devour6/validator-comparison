@@ -2,8 +2,6 @@ import { ImageResponse } from 'next/og'
 import { gradeValidator, buildAverageValidator, NETWORK_AVERAGE_PUBKEY, VALIDATOR_COLORS } from '@/lib/grading'
 import type { ValidatorRaw } from '@/lib/types'
 
-export const runtime = 'edge'
-
 const TRILLIUM_URL = 'https://api.trillium.so/recency_weighted_average_validator_rewards'
 
 const CATEGORIES = [
@@ -15,36 +13,31 @@ const CATEGORIES = [
   { key: 'stake', label: 'Stake & Trust' },
 ]
 
-// Cache font fetches at module scope
-const audiowideFont = fetch(
-  'https://fonts.gstatic.com/s/audiowide/v20/l7gdbjpo0cum0ckerWCtkQXPExpQnw.woff2'
-).then(res => res.arrayBuffer())
-
-const outfitFont = fetch(
-  'https://fonts.gstatic.com/s/outfit/v11/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1O4a0Ew.woff2'
-).then(res => res.arrayBuffer())
+async function loadFont(url: string): Promise<ArrayBuffer> {
+  const res = await fetch(url)
+  return res.arrayBuffer()
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const pubkeys = searchParams.getAll('v').slice(0, 4)
 
-  // Fetch fonts and logo in parallel
-  const [audiowide, outfit] = await Promise.all([audiowideFont, outfitFont])
+  // Fetch fonts in parallel
+  const [audiowide, outfit] = await Promise.all([
+    loadFont('https://fonts.gstatic.com/s/audiowide/v22/l7gdbjpo0cum0ckerWCtkQ.ttf'),
+    loadFont('https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4E.ttf'),
+  ])
 
-  // Fetch logo
-  let logoSrc = ''
-  try {
-    const logoRes = await fetch(new URL('/logo.png', request.url))
-    const logoData = await logoRes.arrayBuffer()
-    logoSrc = `data:image/png;base64,${Buffer.from(logoData).toString('base64')}`
-  } catch { /* use text fallback */ }
-
-  // Fetch all validators
+  // Fetch all validators from Trillium
   let allValidators: ValidatorRaw[] = []
   try {
-    const res = await fetch(TRILLIUM_URL, { next: { revalidate: 300 } })
-    if (res.ok) allValidators = await res.json()
-  } catch { /* empty array fallback */ }
+    const res = await fetch(TRILLIUM_URL)
+    if (res.ok) {
+      allValidators = await res.json()
+    }
+  } catch (e) {
+    console.error('OG route: Trillium fetch failed', e)
+  }
 
   // Resolve pubkeys to validators
   const networkAvg = allValidators.length > 0 ? buildAverageValidator(allValidators) : null
@@ -60,13 +53,12 @@ export async function GET(request: Request) {
 
   // Adaptive sizing
   const count = validators.length
-  const circleSize = count <= 2 ? 72 : count === 3 ? 64 : 56
-  const circleFontSize = count <= 2 ? 22 : count === 3 ? 18 : 16
-  const circleGap = count <= 2 ? 48 : count === 3 ? 32 : 24
-  const labelWidth = count <= 2 ? 130 : count === 3 ? 115 : 100
-  const barGap = count <= 2 ? 6 : 4
+  const circleSize = count <= 2 ? 80 : count === 3 ? 68 : 58
+  const circleFontSize = count <= 2 ? 26 : count === 3 ? 22 : 18
+  const circleGap = count <= 2 ? 60 : count === 3 ? 40 : 28
+  const labelWidth = count <= 2 ? 130 : count === 3 ? 120 : 105
+  const barGap = count <= 2 ? 8 : 6
 
-  // If no valid validators, show generic card
   const showGeneric = grades.length === 0
 
   const element = (
@@ -78,6 +70,7 @@ export async function GET(request: Request) {
         height: '100%',
         backgroundColor: '#0F0E0C',
         fontFamily: 'Outfit',
+        color: '#F3EED9',
       }}
     >
       {/* Header */}
@@ -85,27 +78,46 @@ export async function GET(request: Request) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
-          padding: '24px 40px 16px',
+          padding: '28px 48px 0',
+          gap: 14,
         }}
       >
-        {logoSrc ? (
-          <img src={logoSrc} width={36} height={36} style={{ borderRadius: 8 }} />
-        ) : null}
-        <span
+        {/* Phase text logo since image loading is unreliable */}
+        <div
           style={{
+            display: 'flex',
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            backgroundColor: 'rgba(243,238,217,0.08)',
+            border: '1px solid rgba(243,238,217,0.15)',
+            alignItems: 'center',
+            justifyContent: 'center',
             fontFamily: 'Audiowide',
-            fontSize: 22,
+            fontSize: 18,
             color: '#F3EED9',
-            letterSpacing: '0.02em',
           }}
         >
-          Validator Comparison
-        </span>
+          P
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span
+            style={{
+              fontFamily: 'Audiowide',
+              fontSize: 24,
+              color: '#F3EED9',
+              letterSpacing: '0.02em',
+            }}
+          >
+            Validator Comparison
+          </span>
+          <span style={{ fontSize: 12, color: 'rgba(243,238,217,0.4)' }}>
+            by Phase
+          </span>
+        </div>
       </div>
 
       {showGeneric ? (
-        /* Generic fallback card */
         <div
           style={{
             display: 'flex',
@@ -116,16 +128,10 @@ export async function GET(request: Request) {
             gap: 16,
           }}
         >
-          <span
-            style={{
-              fontFamily: 'Audiowide',
-              fontSize: 32,
-              color: '#F3EED9',
-            }}
-          >
+          <span style={{ fontFamily: 'Audiowide', fontSize: 36, color: '#F3EED9' }}>
             Phase
           </span>
-          <span style={{ fontSize: 16, color: 'rgba(243,238,217,0.5)' }}>
+          <span style={{ fontSize: 18, color: 'rgba(243,238,217,0.5)' }}>
             Compare Solana validators side-by-side
           </span>
         </div>
@@ -137,7 +143,7 @@ export async function GET(request: Request) {
               display: 'flex',
               justifyContent: 'center',
               gap: circleGap,
-              padding: '12px 40px 20px',
+              padding: '28px 48px 24px',
             }}
           >
             {grades.map((g, i) => {
@@ -145,7 +151,7 @@ export async function GET(request: Request) {
                 g.validator.vote_account_pubkey === NETWORK_AVERAGE_PUBKEY
                   ? 'Network Average'
                   : g.validator.name || 'Unknown'
-              const truncName = name.length > 18 ? name.slice(0, 16) + '...' : name
+              const truncName = name.length > 20 ? name.slice(0, 18) + '...' : name
               return (
                 <div
                   key={i}
@@ -153,7 +159,7 @@ export async function GET(request: Request) {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 6,
+                    gap: 8,
                   }}
                 >
                   {/* Grade circle */}
@@ -166,8 +172,6 @@ export async function GET(request: Request) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      flexDirection: 'column',
-                      gap: 0,
                     }}
                   >
                     <span
@@ -175,7 +179,6 @@ export async function GET(request: Request) {
                         fontSize: circleFontSize,
                         fontWeight: 700,
                         color: g.overall.color,
-                        lineHeight: 1.1,
                       }}
                     >
                       {g.overallScore.toFixed(1)}
@@ -184,7 +187,7 @@ export async function GET(request: Request) {
                   {/* Grade letter */}
                   <span
                     style={{
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: 600,
                       color: g.overall.color,
                     }}
@@ -195,7 +198,7 @@ export async function GET(request: Request) {
                   <span
                     style={{
                       fontFamily: 'Audiowide',
-                      fontSize: 12,
+                      fontSize: 13,
                       color: VALIDATOR_COLORS[i],
                     }}
                   >
@@ -210,7 +213,7 @@ export async function GET(request: Request) {
           <div
             style={{
               display: 'flex',
-              margin: '0 40px',
+              margin: '0 48px',
               height: 1,
               backgroundColor: 'rgba(243,238,217,0.1)',
             }}
@@ -221,8 +224,8 @@ export async function GET(request: Request) {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 14,
-              padding: '20px 40px',
+              gap: 12,
+              padding: '20px 48px',
               flex: 1,
             }}
           >
@@ -232,26 +235,26 @@ export async function GET(request: Request) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 16,
                 }}
               >
                 {/* Category label */}
                 <span
                   style={{
                     width: labelWidth,
-                    fontSize: 12,
+                    fontSize: 13,
                     color: 'rgba(243,238,217,0.5)',
                     flexShrink: 0,
                   }}
                 >
                   {cat.label}
                 </span>
-                {/* Bars for each validator */}
+                {/* Bars */}
                 <div style={{ display: 'flex', flex: 1, gap: barGap }}>
                   {grades.map((g, i) => {
                     const catData = g.categories[cat.key]
                     const score = catData?.score ?? 0
-                    const pct = Math.max(0, Math.min(100, (score / 10) * 100))
+                    const pct = Math.max(2, Math.min(100, (score / 10) * 100))
                     return (
                       <div
                         key={i}
@@ -262,7 +265,6 @@ export async function GET(request: Request) {
                           gap: 3,
                         }}
                       >
-                        {/* Score label */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <span
                             style={{
@@ -274,12 +276,11 @@ export async function GET(request: Request) {
                             {score.toFixed(1)}
                           </span>
                         </div>
-                        {/* Bar */}
                         <div
                           style={{
                             display: 'flex',
-                            height: 8,
-                            borderRadius: 4,
+                            height: 10,
+                            borderRadius: 5,
                             backgroundColor: 'rgba(243,238,217,0.06)',
                             overflow: 'hidden',
                           }}
@@ -288,7 +289,7 @@ export async function GET(request: Request) {
                             style={{
                               width: `${pct}%`,
                               height: '100%',
-                              borderRadius: 4,
+                              borderRadius: 5,
                               backgroundColor: VALIDATOR_COLORS[i],
                             }}
                           />
@@ -308,14 +309,17 @@ export async function GET(request: Request) {
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          padding: '12px 40px 20px',
+          alignItems: 'center',
+          padding: '14px 48px 22px',
           borderTop: '1px solid rgba(243,238,217,0.08)',
-          fontSize: 11,
-          color: 'rgba(243,238,217,0.35)',
         }}
       >
-        <span>validator-comparison.vercel.app</span>
-        <span>Phase</span>
+        <span style={{ fontSize: 12, color: 'rgba(243,238,217,0.35)' }}>
+          validator-comparison.vercel.app
+        </span>
+        <span style={{ fontFamily: 'Audiowide', fontSize: 14, color: 'rgba(243,238,217,0.4)' }}>
+          Phase
+        </span>
       </div>
     </div>
   )
@@ -324,8 +328,8 @@ export async function GET(request: Request) {
     width: 1200,
     height: 630,
     fonts: [
-      { name: 'Audiowide', data: audiowide, weight: 400, style: 'normal' as const },
-      { name: 'Outfit', data: outfit, weight: 400, style: 'normal' as const },
+      { name: 'Audiowide', data: audiowide, weight: 400 as const, style: 'normal' as const },
+      { name: 'Outfit', data: outfit, weight: 400 as const, style: 'normal' as const },
     ],
     headers: {
       'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',

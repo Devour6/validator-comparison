@@ -84,13 +84,12 @@ export function ShareButton({ pubkeys }: ShareButtonProps) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="px-4 py-2.5 rounded-lg border border-border bg-surface text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center gap-2"
+        className="px-4 py-2.5 rounded-lg border border-[#F3EED9]/20 bg-[#F3EED9]/5 text-sm text-[#F3EED9] hover:bg-[#F3EED9]/10 hover:border-[#F3EED9]/30 transition-colors flex items-center gap-2"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
         </svg>
-        Share
+        Share This Comparison
       </button>
 
       {open && (
