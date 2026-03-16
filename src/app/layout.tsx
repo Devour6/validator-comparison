@@ -9,8 +9,18 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://validator-comparison.vercel.app'),
   title: "Validator Comparison | Phase",
   description: "Compare Solana validators side-by-side — performance, APY, decentralization, and more.",
+  openGraph: {
+    title: "Validator Comparison | Phase",
+    description: "Compare Solana validators side-by-side with Phase.",
+    siteName: "Phase",
+    type: "website",
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
   icons: {
     icon: [
       { url: '/icon.png', type: 'image/png' },

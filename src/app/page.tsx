@@ -7,6 +7,7 @@ import { ValidatorSearch } from '@/components/validator-search'
 import { ComparisonView } from '@/components/comparison-view'
 import { Methodology } from '@/components/methodology'
 import { buildAverageValidator, NETWORK_AVERAGE_PUBKEY } from '@/lib/grading'
+import { ShareButton } from '@/components/share-button'
 import type { ValidatorRaw } from '@/lib/types'
 
 const MAX_VALIDATORS = 4
@@ -149,6 +150,9 @@ export default function Home() {
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3">
+                  {activeValidators.length > 0 && (
+                    <ShareButton pubkeys={activeValidators.map(v => v.vote_account_pubkey)} />
+                  )}
                   {!hasNetworkAvg && networkAvg && (
                     <button
                       onClick={addNetworkAverage}
