@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ValidatorSearch } from '@/components/validator-search'
 import { ComparisonView } from '@/components/comparison-view'
 import { Methodology } from '@/components/methodology'
+import { buildAverageValidator, NETWORK_AVERAGE_PUBKEY } from '@/lib/grading'
 import type { ValidatorRaw } from '@/lib/types'
 
 const MAX_VALIDATORS = 4
@@ -59,8 +60,34 @@ export default function Home() {
     })
   }, [])
 
+  const networkAvg = useMemo(() => validators.length > 0 ? buildAverageValidator(validators) : null, [validators])
+
+  const addNetworkAverage = useCallback(() => {
+    if (!networkAvg) return
+    setSelected(prev => {
+      // Don't add if already present
+      if (prev.some(v => v?.vote_account_pubkey === NETWORK_AVERAGE_PUBKEY)) return prev
+      // Find first empty slot or add one
+      const emptyIdx = prev.findIndex(v => v === null)
+      if (emptyIdx >= 0) {
+        const next = [...prev]
+        next[emptyIdx] = networkAvg
+        const allFilled = !next.some(x => x === null)
+        if (allFilled && next.length < MAX_VALIDATORS) return [...next, null] as (ValidatorRaw | null)[]
+        return next
+      }
+      if (prev.length < MAX_VALIDATORS) {
+        const next = [...prev, networkAvg]
+        if (next.length < MAX_VALIDATORS) return [...next, null] as (ValidatorRaw | null)[]
+        return next
+      }
+      return prev
+    })
+  }, [networkAvg])
+
   const activeValidators = selected.filter((v): v is ValidatorRaw => v !== null)
   const selectedPubkeys = new Set(activeValidators.map(v => v.vote_account_pubkey))
+  const hasNetworkAvg = selectedPubkeys.has(NETWORK_AVERAGE_PUBKEY)
 
   return (
     <div className="min-h-screen bg-[#0F0E0C]">
@@ -120,15 +147,25 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* Add Validator Button */}
-                {selected.length < MAX_VALIDATORS && selected.every(v => v !== null) && (
-                  <button
-                    onClick={addSlot}
-                    className="w-full py-3 rounded-lg border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
-                  >
-                    + Add another validator (up to {MAX_VALIDATORS})
-                  </button>
-                )}
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-3">
+                  {!hasNetworkAvg && networkAvg && (
+                    <button
+                      onClick={addNetworkAverage}
+                      className="px-4 py-2.5 rounded-lg border border-border bg-surface text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                    >
+                      + Compare to Network Average
+                    </button>
+                  )}
+                  {selected.length < MAX_VALIDATORS && selected.every(v => v !== null) && (
+                    <button
+                      onClick={addSlot}
+                      className="px-4 py-2.5 rounded-lg border border-dashed border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                    >
+                      + Add another validator (up to {MAX_VALIDATORS})
+                    </button>
+                  )}
+                </div>
 
                 <p className="text-xs text-muted-foreground">
                   {validators.length.toLocaleString()} validators loaded -- 10-epoch weighted averages

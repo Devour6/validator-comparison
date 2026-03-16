@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { GradeBadge } from '@/components/grade-badge'
-import { gradeValidator, buildCategoryData, getClientName } from '@/lib/grading'
+import { gradeValidator, buildCategoryData, getClientName, NETWORK_AVERAGE_PUBKEY } from '@/lib/grading'
 import type { ValidatorRaw } from '@/lib/types'
 
 interface ComparisonViewProps {
@@ -171,6 +171,25 @@ export function ComparisonView({ validators, allValidators }: ComparisonViewProp
 }
 
 function ValidatorInfoCard({ validator, color }: { validator: ValidatorRaw; color: string }) {
+  const isNetworkAvg = validator.vote_account_pubkey === NETWORK_AVERAGE_PUBKEY
+
+  if (isNetworkAvg) {
+    return (
+      <Card className="border-border bg-surface">
+        <CardHeader className="pb-3">
+          <CardTitle className="font-display text-sm truncate" style={{ color }}>Network Average</CardTitle>
+          <p className="text-xs text-muted-foreground">Computed average across all validators</p>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <InfoRow label="Avg Stake" value={fmtSol(validator.average_activated_stake)} />
+          <InfoRow label="Avg Commission" value={(validator.average_commission ?? 0).toFixed(1) + '%'} />
+          <InfoRow label="Majority Client" value={getClientName(validator.client_type)} />
+          <InfoRow label="Majority Region" value={validator.continent || 'Unknown'} />
+        </CardContent>
+      </Card>
+    )
+  }
+
   const location = [validator.city, validator.country].filter(Boolean).join(', ') || 'Unknown'
   const client = getClientName(validator.client_type)
 

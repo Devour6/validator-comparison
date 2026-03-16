@@ -313,4 +313,82 @@ export function buildCategoryData(
   ]
 }
 
+export const NETWORK_AVERAGE_PUBKEY = 'network-average-validator'
+
+export function buildAverageValidator(allValidators: ValidatorRaw[]): ValidatorRaw {
+  const n = allValidators.length
+  if (n === 0) {
+    return { vote_account_pubkey: NETWORK_AVERAGE_PUBKEY, name: 'Network Average', city: '', country: '', is_dz: false, is_sfdp: false, average_activated_stake: 0 }
+  }
+
+  function avg(getter: (v: ValidatorRaw) => number | undefined | null): number {
+    let sum = 0, count = 0
+    for (const v of allValidators) {
+      const val = getter(v)
+      if (val != null && isFinite(val)) { sum += val; count++ }
+    }
+    return count > 0 ? sum / count : 0
+  }
+
+  // Count average stake pools per validator
+  let totalPoolCount = 0
+  for (const v of allValidators) {
+    if (v.stake_pools) totalPoolCount += Object.values(v.stake_pools).filter(x => x > 0).length
+  }
+  const avgPoolCount = Math.round(totalPoolCount / n)
+  const avgPools: Record<string, number> = {}
+  for (let i = 0; i < avgPoolCount; i++) avgPools[`pool_${i}`] = 1
+
+  // Find most common client type for display
+  const clientCounts: Record<string, number> = {}
+  for (const v of allValidators) {
+    const c = String(v.client_type || 'Unknown')
+    clientCounts[c] = (clientCounts[c] || 0) + 1
+  }
+  const majorityClient = Object.entries(clientCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown'
+
+  // Find most common continent
+  const continentCounts: Record<string, number> = {}
+  for (const v of allValidators) {
+    const c = v.continent || 'Unknown'
+    continentCounts[c] = (continentCounts[c] || 0) + 1
+  }
+  const majorityContinent = Object.entries(continentCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
+
+  // SFDP: proportion
+  const sfdpCount = allValidators.filter(v => v.is_sfdp).length
+  const superminorityCount = allValidators.filter(v => v.superminority).length
+
+  return {
+    vote_account_pubkey: NETWORK_AVERAGE_PUBKEY,
+    name: 'Network Average',
+    city: '',
+    country: '',
+    continent: majorityContinent,
+    is_dz: false,
+    is_sfdp: sfdpCount > n / 2,
+    superminority: superminorityCount > n / 2,
+    client_type: majorityClient,
+    stake_pools: avgPools,
+    total_from_stake_pools: avg(v => v.total_from_stake_pools),
+    total_not_from_stake_pools: avg(v => v.total_not_from_stake_pools),
+    average_activated_stake: avg(v => v.average_activated_stake),
+    average_commission: avg(v => v.average_commission),
+    average_epoch_credits: avg(v => v.average_epoch_credits),
+    avg_skip_rate: avg(v => v.avg_skip_rate),
+    average_compound_overall_apy: avg(v => v.average_compound_overall_apy),
+    average_delegator_compound_total_apy: avg(v => v.average_delegator_compound_total_apy),
+    average_delegator_compound_mev_apy: avg(v => v.average_delegator_compound_mev_apy),
+    average_delegator_compound_block_rewards_apy: avg(v => v.average_delegator_compound_block_rewards_apy),
+    average_delegator_compound_inflation_apy: avg(v => v.average_delegator_compound_inflation_apy),
+    average_avg_tx_success_rate: avg(v => v.average_avg_tx_success_rate),
+    average_avg_user_tx_success_rate: avg(v => v.average_avg_user_tx_success_rate),
+    average_build_time_score: avg(v => v.average_build_time_score),
+    average_ibrl_score: avg(v => v.average_ibrl_score),
+    average_vote_packing_score: avg(v => v.average_vote_packing_score),
+    average_mean_vote_latency: avg(v => v.average_mean_vote_latency),
+    jip25_rank: 0,
+  }
+}
+
 export { toGrade, getClientName, num }

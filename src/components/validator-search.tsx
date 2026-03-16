@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
+import { NETWORK_AVERAGE_PUBKEY } from '@/lib/grading'
 import type { ValidatorRaw } from '@/lib/types'
 
 interface ValidatorSearchProps {
@@ -69,7 +70,11 @@ export function ValidatorSearch({ validators, selected, onSelect, onRemove, plac
         <div className="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-foreground truncate">{selected.name || 'Unknown'}</p>
-            <p className="text-xs text-muted-foreground font-mono truncate">{selected.vote_account_pubkey}</p>
+            <p className="text-xs text-muted-foreground font-mono truncate">
+              {selected.vote_account_pubkey === NETWORK_AVERAGE_PUBKEY
+                ? 'Computed average across all validators'
+                : selected.vote_account_pubkey}
+            </p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <button
