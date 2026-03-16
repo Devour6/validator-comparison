@@ -7,10 +7,10 @@ const TRILLIUM_URL = 'https://api.trillium.so/recency_weighted_average_validator
 const CATEGORIES = [
   { key: 'performance', label: 'Performance' },
   { key: 'rewards', label: 'APY & Rewards' },
-  { key: 'reliability', label: 'Reliability' },
+  { key: 'stake', label: 'Stake Div.' },
   { key: 'commission', label: 'Commission' },
   { key: 'decentralization', label: 'Decentralization' },
-  { key: 'stake', label: 'Trust' },
+  { key: 'reliability', label: 'Reliability' },
 ]
 
 async function loadFont(url: string): Promise<ArrayBuffer | null> {

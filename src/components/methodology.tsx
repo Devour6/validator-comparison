@@ -39,9 +39,9 @@ const CATEGORIES = [
     formula: 'Category Score = Delegator APY Percentile Score (3-10 range)',
   },
   {
-    name: 'Trust',
+    name: 'Stake Diversification',
     weight: '10%',
-    description: 'Measures institutional trust through stake pool diversity, scored by percentile rank. Raw stake amount is intentionally excluded — high stake does not indicate a quality validator. What matters is how many independent stake pools have chosen to delegate.',
+    description: 'Measures how broadly a validator is trusted by independent stake pools, scored by percentile rank. Raw stake amount is intentionally excluded — high stake does not indicate a quality validator. What matters is how many independent stake pools have chosen to delegate.',
     metrics: [
       { name: 'Stake Pool Diversity', scoring: 'Scored by percentile rank among all validators (3-10 scale, rounded to 0.5). A validator trusted by more pools ranks higher. This ensures realistic grade spread — most validators cluster in the middle rather than all scoring 10.' },
       { name: 'Pool Stake / Native Stake / Activated Stake', scoring: 'Shown for context only — not factored into the grade.' },
@@ -103,7 +103,7 @@ export function Methodology() {
             <p className="font-semibold mb-2">Overall Score Formula:</p>
             <div className="bg-background rounded-lg p-3 font-mono text-xs leading-relaxed border border-border">
               Overall = Performance (25%) + APY & Rewards (20%) + Reliability (20%)<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Commission (15%) + Trust (10%) + Decentralization (10%)
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Commission (15%) + Stake Diversification (10%) + Decentralization (10%)
             </div>
           </div>
         </CardContent>

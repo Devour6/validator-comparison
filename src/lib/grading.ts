@@ -191,7 +191,7 @@ export function gradeValidator(v: ValidatorRaw, allValidators: ValidatorRaw[]): 
   const delegatorApy = num(v.average_delegator_compound_total_apy)
   const rewardsScore = scoreApy(delegatorApy, allValidators)
 
-  // Trust scored purely on pool diversity — raw stake amount doesn't indicate quality
+  // Stake Diversification — scored purely on pool diversity, raw stake amount doesn't indicate quality
   const stakeScore = scoreStakePoolDiversity(v.stake_pools, allValidators)
 
   const comm = num(v.average_commission)
@@ -266,7 +266,7 @@ export function buildCategoryData(
     },
     {
       key: 'stake',
-      label: 'Trust',
+      label: 'Stake Diversification',
       grades: grades.map(g => g.categories.stake),
       metrics: [
         row('Stake Pools', v => v.stake_pools ? Object.values(v.stake_pools).filter(x => x > 0).length : 0, v => fmtNum(v, 0), false, 'Number of independent pools delegating — scored by percentile rank'),

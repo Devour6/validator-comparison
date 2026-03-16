@@ -34,8 +34,15 @@ export function ShareButton({ pubkeys, names }: ShareButtonProps) {
         setOpen(false)
       }
     }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
   }, [])
 
   const compareUrl = buildCompareUrl(pubkeys)
@@ -55,6 +62,7 @@ export function ShareButton({ pubkeys, names }: ShareButtonProps) {
     setDownloading(true)
     try {
       const res = await fetch(ogUrl)
+      if (!res.ok) return
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
