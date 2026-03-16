@@ -314,6 +314,7 @@ export function buildCategoryData(
 }
 
 export const NETWORK_AVERAGE_PUBKEY = 'network-average-validator'
+export const VALIDATOR_COLORS = ['#F3EED9', '#3b82f6', '#f59e0b', '#8b5cf6']
 
 export function buildAverageValidator(allValidators: ValidatorRaw[]): ValidatorRaw {
   const n = allValidators.length

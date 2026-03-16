@@ -4,15 +4,13 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { GradeBadge } from '@/components/grade-badge'
-import { gradeValidator, buildCategoryData, getClientName, NETWORK_AVERAGE_PUBKEY } from '@/lib/grading'
+import { gradeValidator, buildCategoryData, getClientName, NETWORK_AVERAGE_PUBKEY, VALIDATOR_COLORS } from '@/lib/grading'
 import type { ValidatorRaw } from '@/lib/types'
 
 interface ComparisonViewProps {
   validators: ValidatorRaw[]
   allValidators: ValidatorRaw[]
 }
-
-const VALIDATOR_COLORS = ['#F3EED9', '#3b82f6', '#f59e0b', '#8b5cf6']
 
 export function ComparisonView({ validators, allValidators }: ComparisonViewProps) {
   const grades = useMemo(
